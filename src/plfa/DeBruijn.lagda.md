@@ -1059,6 +1059,7 @@ data Steps : ∀ {A} → ∅ ⊢ A → Set where
 ```
 The evaluator takes gas and a term and returns the corresponding steps:
 ```
+{-# TERMINATING #-}
 eval : ∀ {A}
   → Gas
   → (L : ∅ ⊢ A)

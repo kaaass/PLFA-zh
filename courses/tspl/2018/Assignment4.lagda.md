@@ -641,6 +641,7 @@ not fixed by the given arguments.
         ----------
       → Steps L
 
+  {-# TERMINATING #-}
   eval : ∀ {A}
     → Gas
     → (L : ∅ ⊢ A)

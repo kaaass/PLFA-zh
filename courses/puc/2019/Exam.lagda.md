@@ -375,6 +375,7 @@ module Problem2 where
         ----------
       → Steps L
 
+  {-# TERMINATING #-}
   eval : ∀ {A}
     → Gas
     → (L : ∅ ⊢ A)
