@@ -1,0 +1,1709 @@
+---
+src: ./src/plfa/Lists.lagda.md
+title     : "Lists: 列表与高阶函数"
+layout    : page
+prev      : /Decidable/
+permalink : /Lists/
+next      : /Lambda/
+translators: ["Fangyi Zhou"]
+progress  : 100
+---
+
+{% raw %}<pre class="Agda"><a id="170" class="Keyword">module</a> <a id="177" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}" class="Module">plfa.Lists</a> <a id="188" class="Keyword">where</a>
+</pre>{% endraw %}
+{::comment}
+This chapter discusses the list data type.  It gives further examples
+of many of the techniques we have developed so far, and provides
+examples of polymorphic types and higher-order functions.
+{:/}
+
+本章节讨论列表（List）数据类型。我们用列表作为例子，来使用我们之前学习的技巧。同时，
+列表也给我们带来多态类型（Polymorphic Types）和高阶函数（Higher-order Functions）的例子。
+
+{::comment}
+## Imports
+{:/}
+
+## 导入
+
+{% raw %}<pre class="Agda"><a id="561" class="Keyword">import</a> <a id="568" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.html" class="Module">Relation.Binary.PropositionalEquality</a> <a id="606" class="Symbol">as</a> <a id="609" class="Module">Eq</a>
+<a id="612" class="Keyword">open</a> <a id="617" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.html" class="Module">Eq</a> <a id="620" class="Keyword">using</a> <a id="626" class="Symbol">(</a><a id="627" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">_≡_</a><a id="630" class="Symbol">;</a> <a id="632" href="Agda.Builtin.Equality.html#182" class="InductiveConstructor">refl</a><a id="636" class="Symbol">;</a> <a id="638" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#939" class="Function">sym</a><a id="641" class="Symbol">;</a> <a id="643" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#984" class="Function">trans</a><a id="648" class="Symbol">;</a> <a id="650" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#1090" class="Function">cong</a><a id="654" class="Symbol">)</a>
+<a id="656" class="Keyword">open</a> <a id="661" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2499" class="Module">Eq.≡-Reasoning</a>
+<a id="676" class="Keyword">open</a> <a id="681" class="Keyword">import</a> <a id="688" href="https://agda.github.io/agda-stdlib/v1.1/Data.Bool.html" class="Module">Data.Bool</a> <a id="698" class="Keyword">using</a> <a id="704" class="Symbol">(</a><a id="705" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Bool.html#135" class="Datatype">Bool</a><a id="709" class="Symbol">;</a> <a id="711" href="Agda.Builtin.Bool.html#160" class="InductiveConstructor">true</a><a id="715" class="Symbol">;</a> <a id="717" href="Agda.Builtin.Bool.html#154" class="InductiveConstructor">false</a><a id="722" class="Symbol">;</a> <a id="724" href="https://agda.github.io/agda-stdlib/v1.1/Data.Bool.Base.html#1480" class="Function">T</a><a id="725" class="Symbol">;</a> <a id="727" href="https://agda.github.io/agda-stdlib/v1.1/Data.Bool.Base.html#1015" class="Function Operator">_∧_</a><a id="730" class="Symbol">;</a> <a id="732" href="https://agda.github.io/agda-stdlib/v1.1/Data.Bool.Base.html#1073" class="Function Operator">_∨_</a><a id="735" class="Symbol">;</a> <a id="737" href="https://agda.github.io/agda-stdlib/v1.1/Data.Bool.Base.html#961" class="Function">not</a><a id="740" class="Symbol">)</a>
+<a id="742" class="Keyword">open</a> <a id="747" class="Keyword">import</a> <a id="754" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.html" class="Module">Data.Nat</a> <a id="763" class="Keyword">using</a> <a id="769" class="Symbol">(</a><a id="770" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a><a id="771" class="Symbol">;</a> <a id="773" href="Agda.Builtin.Nat.html#183" class="InductiveConstructor">zero</a><a id="777" class="Symbol">;</a> <a id="779" href="Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a><a id="782" class="Symbol">;</a> <a id="784" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">_+_</a><a id="787" class="Symbol">;</a> <a id="789" href="Agda.Builtin.Nat.html#501" class="Primitive Operator">_*_</a><a id="792" class="Symbol">;</a> <a id="794" href="Agda.Builtin.Nat.html#388" class="Primitive Operator">_∸_</a><a id="797" class="Symbol">;</a> <a id="799" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Base.html#895" class="Datatype Operator">_≤_</a><a id="802" class="Symbol">;</a> <a id="804" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Base.html#960" class="InductiveConstructor">s≤s</a><a id="807" class="Symbol">;</a> <a id="809" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Base.html#918" class="InductiveConstructor">z≤n</a><a id="812" class="Symbol">)</a>
+<a id="814" class="Keyword">open</a> <a id="819" class="Keyword">import</a> <a id="826" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Properties.html" class="Module">Data.Nat.Properties</a> <a id="846" class="Keyword">using</a>
+  <a id="854" class="Symbol">(</a><a id="855" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Properties.html#11578" class="Function">+-assoc</a><a id="862" class="Symbol">;</a> <a id="864" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Properties.html#11679" class="Function">+-identityˡ</a><a id="875" class="Symbol">;</a> <a id="877" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Properties.html#11734" class="Function">+-identityʳ</a><a id="888" class="Symbol">;</a> <a id="890" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Properties.html#18464" class="Function">*-assoc</a><a id="897" class="Symbol">;</a> <a id="899" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Properties.html#17362" class="Function">*-identityˡ</a><a id="910" class="Symbol">;</a> <a id="912" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Properties.html#17426" class="Function">*-identityʳ</a><a id="923" class="Symbol">)</a>
+<a id="925" class="Keyword">open</a> <a id="930" class="Keyword">import</a> <a id="937" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html" class="Module">Relation.Nullary</a> <a id="954" class="Keyword">using</a> <a id="960" class="Symbol">(</a><a id="961" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#535" class="Function Operator">¬_</a><a id="963" class="Symbol">;</a> <a id="965" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#605" class="Datatype">Dec</a><a id="968" class="Symbol">;</a> <a id="970" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#641" class="InductiveConstructor">yes</a><a id="973" class="Symbol">;</a> <a id="975" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#668" class="InductiveConstructor">no</a><a id="977" class="Symbol">)</a>
+<a id="979" class="Keyword">open</a> <a id="984" class="Keyword">import</a> <a id="991" href="https://agda.github.io/agda-stdlib/v1.1/Data.Product.html" class="Module">Data.Product</a> <a id="1004" class="Keyword">using</a> <a id="1010" class="Symbol">(</a><a id="1011" href="https://agda.github.io/agda-stdlib/v1.1/Data.Product.html#1162" class="Function Operator">_×_</a><a id="1014" class="Symbol">;</a> <a id="1016" href="https://agda.github.io/agda-stdlib/v1.1/Data.Product.html#1364" class="Function">∃</a><a id="1017" class="Symbol">;</a> <a id="1019" href="https://agda.github.io/agda-stdlib/v1.1/Data.Product.html#1783" class="Function">∃-syntax</a><a id="1027" class="Symbol">)</a> <a id="1029" class="Keyword">renaming</a> <a id="1038" class="Symbol">(</a><a id="1039" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">_,_</a> <a id="1043" class="Symbol">to</a> <a id="1046" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">⟨_,_⟩</a><a id="1051" class="Symbol">)</a>
+<a id="1053" class="Keyword">open</a> <a id="1058" class="Keyword">import</a> <a id="1065" href="https://agda.github.io/agda-stdlib/v1.1/Function.html" class="Module">Function</a> <a id="1074" class="Keyword">using</a> <a id="1080" class="Symbol">(</a><a id="1081" href="https://agda.github.io/agda-stdlib/v1.1/Function.html#1099" class="Function Operator">_∘_</a><a id="1084" class="Symbol">)</a>
+<a id="1086" class="Keyword">open</a> <a id="1091" class="Keyword">import</a> <a id="1098" href="https://agda.github.io/agda-stdlib/v1.1/Level.html" class="Module">Level</a> <a id="1104" class="Keyword">using</a> <a id="1110" class="Symbol">(</a><a id="1111" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Primitive.html#408" class="Postulate">Level</a><a id="1116" class="Symbol">)</a>
+<a id="1118" class="Keyword">open</a> <a id="1123" class="Keyword">import</a> <a id="1130" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Isomorphism.md %}{% raw %}" class="Module">plfa.Isomorphism</a> <a id="1147" class="Keyword">using</a> <a id="1153" class="Symbol">(</a><a id="1154" href="plfa.Isomorphism.html#5424" class="Record Operator">_≃_</a><a id="1157" class="Symbol">;</a> <a id="1159" href="plfa.Isomorphism.html#14837" class="Record Operator">_⇔_</a><a id="1162" class="Symbol">)</a>
+</pre>{% endraw %}
+
+{::comment}
+## Lists
+{:/}
+
+## 列表
+
+{::comment}
+Lists are defined in Agda as follows:
+{:/}
+
+Agda 中的列表如下定义：
+{% raw %}<pre class="Agda"><a id="1279" class="Keyword">data</a> <a id="List"></a><a id="1284" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1284" class="Datatype">List</a> <a id="1289" class="Symbol">(</a><a id="1290" href="plfa.Lists.html#1290" class="Bound">A</a> <a id="1292" class="Symbol">:</a> <a id="1294" class="PrimitiveType">Set</a><a id="1297" class="Symbol">)</a> <a id="1299" class="Symbol">:</a> <a id="1301" class="PrimitiveType">Set</a> <a id="1305" class="Keyword">where</a>
+  <a id="List.[]"></a><a id="1313" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1313" class="InductiveConstructor">[]</a>  <a id="1317" class="Symbol">:</a> <a id="1319" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="1324" href="plfa.Lists.html#1290" class="Bound">A</a>
+  <a id="List._∷_"></a><a id="1328" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">_∷_</a> <a id="1332" class="Symbol">:</a> <a id="1334" href="plfa.Lists.html#1290" class="Bound">A</a> <a id="1336" class="Symbol">→</a> <a id="1338" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="1343" href="plfa.Lists.html#1290" class="Bound">A</a> <a id="1345" class="Symbol">→</a> <a id="1347" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="1352" href="plfa.Lists.html#1290" class="Bound">A</a>
+
+<a id="1355" class="Keyword">infixr</a> <a id="1362" class="Number">5</a> <a id="1364" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">_∷_</a>
+</pre>{% endraw %}
+{::comment}
+Let's unpack this definition. If `A` is a set, then `List A` is a set.
+The next two lines tell us that `[]` (pronounced _nil_) is a list of
+type `A` (often called the _empty_ list), and that `_∷_` (pronounced
+_cons_, short for _constructor_) takes a value of type `A` and a value
+of type `List A` and returns a value of type `List A`.  Operator `_∷_`
+has precedence level 5 and associates to the right.
+{:/}
+
+我们来仔细研究这个定义。如果 `A` 是个集合，那么 `List A` 也是一个集合。接下来的两行告诉我们
+`[]` （读作 *nil*）是一个类型为 `A` 的列表（通常被叫做*空*列表），`_∷_`（读作 *cons*，是
+*constructor* 的简写）取一个类型为 `A` 的值，和一个类型为 `List A` 的值，返回一个类型为
+`List A` 的值。`_∷_` 运算符的优先级是 5，向右结合。
+
+{::comment}
+For example,
+{:/}
+
+例如：
+
+{% raw %}<pre class="Agda"><a id="2043" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#2043" class="Function">_</a> <a id="2045" class="Symbol">:</a> <a id="2047" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="2052" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a>
+<a id="2054" class="Symbol">_</a> <a id="2056" class="Symbol">=</a> <a id="2058" class="Number">0</a> <a id="2060" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="2062" class="Number">1</a> <a id="2064" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="2066" class="Number">2</a> <a id="2068" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="2070" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+</pre>{% endraw %}
+{::comment}
+denotes the list of the first three natural numbers.  Since `_∷_`
+associates to the right, the term parses as `0 ∷ (1 ∷ (2 ∷ []))`.
+Here `0` is the first element of the list, called the _head_,
+and `1 ∷ (2 ∷ [])` is a list of the remaining elements, called the
+_tail_. A list is a strange beast: it has a head and a tail,
+nothing in between, and the tail is itself another list!
+{:/}
+
+表示了一个三个自然数的列表。因为 `_∷_` 向右结合，这一项被解析成 `0 ∷ (1 ∷ (2 ∷ []))`。
+在这里，`0` 是列表的第一个元素，称之为*头*（Head），`1 ∷ (2 ∷ [])` 是剩下元素的列表，
+称之为*尾*（Tail）。列表是一个奇怪的怪兽：它有一头一尾，中间没有东西，然而它的尾巴又是一个列表！
+
+{::comment}
+As we've seen, parameterised types can be translated to
+indexed types. The definition above is equivalent to the following:
+{:/}
+
+正如我们所见，参数化的类型可以被转换成索引类型。上面的定义与下列等价：
+
+{% raw %}<pre class="Agda"><a id="2825" class="Keyword">data</a> <a id="List′"></a><a id="2830" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#2830" class="Datatype">List′</a> <a id="2836" class="Symbol">:</a> <a id="2838" class="PrimitiveType">Set</a> <a id="2842" class="Symbol">→</a> <a id="2844" class="PrimitiveType">Set</a> <a id="2848" class="Keyword">where</a>
+  <a id="List′.[]′"></a><a id="2856" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#2856" class="InductiveConstructor">[]′</a>  <a id="2861" class="Symbol">:</a> <a id="2863" class="Symbol">∀</a> <a id="2865" class="Symbol">{</a><a id="2866" href="plfa.Lists.html#2866" class="Bound">A</a> <a id="2868" class="Symbol">:</a> <a id="2870" class="PrimitiveType">Set</a><a id="2873" class="Symbol">}</a> <a id="2875" class="Symbol">→</a> <a id="2877" href="plfa.Lists.html#2830" class="Datatype">List′</a> <a id="2883" href="plfa.Lists.html#2866" class="Bound">A</a>
+  <a id="List′._∷′_"></a><a id="2887" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#2887" class="InductiveConstructor Operator">_∷′_</a> <a id="2892" class="Symbol">:</a> <a id="2894" class="Symbol">∀</a> <a id="2896" class="Symbol">{</a><a id="2897" href="plfa.Lists.html#2897" class="Bound">A</a> <a id="2899" class="Symbol">:</a> <a id="2901" class="PrimitiveType">Set</a><a id="2904" class="Symbol">}</a> <a id="2906" class="Symbol">→</a> <a id="2908" href="plfa.Lists.html#2897" class="Bound">A</a> <a id="2910" class="Symbol">→</a> <a id="2912" href="plfa.Lists.html#2830" class="Datatype">List′</a> <a id="2918" href="plfa.Lists.html#2897" class="Bound">A</a> <a id="2920" class="Symbol">→</a> <a id="2922" href="plfa.Lists.html#2830" class="Datatype">List′</a> <a id="2928" href="plfa.Lists.html#2897" class="Bound">A</a>
+</pre>{% endraw %}
+{::comment}
+Each constructor takes the parameter as an implicit argument.
+Thus, our example list could also be written:
+{:/}
+
+每个构造器将参数作为隐式参数。因此我们列表的例子也可以写作：
+
+{% raw %}<pre class="Agda"><a id="3097" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#3097" class="Function">_</a> <a id="3099" class="Symbol">:</a> <a id="3101" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="3106" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a>
+<a id="3108" class="Symbol">_</a> <a id="3110" class="Symbol">=</a> <a id="3112" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">_∷_</a> <a id="3116" class="Symbol">{</a><a id="3117" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a><a id="3118" class="Symbol">}</a> <a id="3120" class="Number">0</a> <a id="3122" class="Symbol">(</a><a id="3123" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">_∷_</a> <a id="3127" class="Symbol">{</a><a id="3128" href="Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a><a id="3129" class="Symbol">}</a> <a id="3131" class="Number">1</a> <a id="3133" class="Symbol">(</a><a id="3134" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">_∷_</a> <a id="3138" class="Symbol">{</a><a id="3139" href="Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a><a id="3140" class="Symbol">}</a> <a id="3142" class="Number">2</a> <a id="3144" class="Symbol">(</a><a id="3145" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="3148" class="Symbol">{</a><a id="3149" href="Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a><a id="3150" class="Symbol">})))</a>
+</pre>{% endraw %}
+{::comment}
+where here we have provided the implicit parameters explicitly.
+{:/}
+
+此处我们将隐式参数显式地声明。
+
+{::comment}
+Including the pragma:
+{:/}
+
+包含下面的编译器指令
+
+    {-# BUILTIN LIST List #-}
+
+{::comment}
+tells Agda that the type `List` corresponds to the Haskell type
+list, and the constructors `[]` and `_∷_` correspond to nil and
+cons respectively, allowing a more efficient representation of lists.
+{:/}
+
+告诉 Agda，`List` 类型对应了 Haskell 的列表类型，构造器 `[]` 和 `_∷_`
+分别代表了 nil 和 cons，这可以让列表的表示更加的有效率。
+
+{::comment}
+## List syntax
+{:/}
+
+## 列表语法
+
+{::comment}
+We can write lists more conveniently by introducing the following definitions:
+{:/}
+
+我们可以用下面的定义，更简便地表示列表：
+
+{% raw %}<pre class="Agda"><a id="3810" class="Keyword">pattern</a> <a id="[_]"></a><a id="3818" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#3818" class="InductiveConstructor Operator">[_]</a> <a id="3822" href="plfa.Lists.html#3826" class="Bound">z</a> <a id="3824" class="Symbol">=</a> <a id="3826" href="plfa.Lists.html#3826" class="Bound">z</a> <a id="3828" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="3830" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+<a id="3833" class="Keyword">pattern</a> <a id="[_,_]"></a><a id="3841" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#3841" class="InductiveConstructor Operator">[_,_]</a> <a id="3847" href="plfa.Lists.html#3853" class="Bound">y</a> <a id="3849" href="plfa.Lists.html#3857" class="Bound">z</a> <a id="3851" class="Symbol">=</a> <a id="3853" href="plfa.Lists.html#3853" class="Bound">y</a> <a id="3855" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="3857" href="plfa.Lists.html#3857" class="Bound">z</a> <a id="3859" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="3861" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+<a id="3864" class="Keyword">pattern</a> <a id="[_,_,_]"></a><a id="3872" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#3872" class="InductiveConstructor Operator">[_,_,_]</a> <a id="3880" href="plfa.Lists.html#3888" class="Bound">x</a> <a id="3882" href="plfa.Lists.html#3892" class="Bound">y</a> <a id="3884" href="plfa.Lists.html#3896" class="Bound">z</a> <a id="3886" class="Symbol">=</a> <a id="3888" href="plfa.Lists.html#3888" class="Bound">x</a> <a id="3890" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="3892" href="plfa.Lists.html#3892" class="Bound">y</a> <a id="3894" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="3896" href="plfa.Lists.html#3896" class="Bound">z</a> <a id="3898" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="3900" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+<a id="3903" class="Keyword">pattern</a> <a id="[_,_,_,_]"></a><a id="3911" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#3911" class="InductiveConstructor Operator">[_,_,_,_]</a> <a id="3921" href="plfa.Lists.html#3931" class="Bound">w</a> <a id="3923" href="plfa.Lists.html#3935" class="Bound">x</a> <a id="3925" href="plfa.Lists.html#3939" class="Bound">y</a> <a id="3927" href="plfa.Lists.html#3943" class="Bound">z</a> <a id="3929" class="Symbol">=</a> <a id="3931" href="plfa.Lists.html#3931" class="Bound">w</a> <a id="3933" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="3935" href="plfa.Lists.html#3935" class="Bound">x</a> <a id="3937" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="3939" href="plfa.Lists.html#3939" class="Bound">y</a> <a id="3941" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="3943" href="plfa.Lists.html#3943" class="Bound">z</a> <a id="3945" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="3947" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+<a id="3950" class="Keyword">pattern</a> <a id="[_,_,_,_,_]"></a><a id="3958" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#3958" class="InductiveConstructor Operator">[_,_,_,_,_]</a> <a id="3970" href="plfa.Lists.html#3982" class="Bound">v</a> <a id="3972" href="plfa.Lists.html#3986" class="Bound">w</a> <a id="3974" href="plfa.Lists.html#3990" class="Bound">x</a> <a id="3976" href="plfa.Lists.html#3994" class="Bound">y</a> <a id="3978" href="plfa.Lists.html#3998" class="Bound">z</a> <a id="3980" class="Symbol">=</a> <a id="3982" href="plfa.Lists.html#3982" class="Bound">v</a> <a id="3984" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="3986" href="plfa.Lists.html#3986" class="Bound">w</a> <a id="3988" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="3990" href="plfa.Lists.html#3990" class="Bound">x</a> <a id="3992" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="3994" href="plfa.Lists.html#3994" class="Bound">y</a> <a id="3996" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="3998" href="plfa.Lists.html#3998" class="Bound">z</a> <a id="4000" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="4002" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+<a id="4005" class="Keyword">pattern</a> <a id="[_,_,_,_,_,_]"></a><a id="4013" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#4013" class="InductiveConstructor Operator">[_,_,_,_,_,_]</a> <a id="4027" href="plfa.Lists.html#4041" class="Bound">u</a> <a id="4029" href="plfa.Lists.html#4045" class="Bound">v</a> <a id="4031" href="plfa.Lists.html#4049" class="Bound">w</a> <a id="4033" href="plfa.Lists.html#4053" class="Bound">x</a> <a id="4035" href="plfa.Lists.html#4057" class="Bound">y</a> <a id="4037" href="plfa.Lists.html#4061" class="Bound">z</a> <a id="4039" class="Symbol">=</a> <a id="4041" href="plfa.Lists.html#4041" class="Bound">u</a> <a id="4043" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="4045" href="plfa.Lists.html#4045" class="Bound">v</a> <a id="4047" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="4049" href="plfa.Lists.html#4049" class="Bound">w</a> <a id="4051" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="4053" href="plfa.Lists.html#4053" class="Bound">x</a> <a id="4055" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="4057" href="plfa.Lists.html#4057" class="Bound">y</a> <a id="4059" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="4061" href="plfa.Lists.html#4061" class="Bound">z</a> <a id="4063" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="4065" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+</pre>{% endraw %}
+{::comment}
+This is our first use of pattern declarations.  For instance,
+the third line tells us that `[ x , y , z ]` is equivalent to
+`x ∷ y ∷ z ∷ []`, and permits the former to appear either in
+a pattern on the left-hand side of an equation, or a term
+on the right-hand side of an equation.
+{:/}
+
+这是我们第一次使用模式声明。举例来说，第三行告诉我们 `[ x , y , z ]` 等价于
+`x ∷ y ∷ z ∷ []`。前者可以在模式或者等式的左手边，或者是等式右手边的项中出现。
+
+{::comment}
+## Append
+{:/}
+
+## 附加
+
+{::comment}
+Our first function on lists is written `_++_` and pronounced
+_append_:
+{:/}
+
+我们对于列表的第一个函数写作 `_++_`，读作*附加*（Append）：
+
+{% raw %}<pre class="Agda"><a id="4636" class="Keyword">infixr</a> <a id="4643" class="Number">5</a> <a id="4645" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#4651" class="Function Operator">_++_</a>
+
+<a id="_++_"></a><a id="4651" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#4651" class="Function Operator">_++_</a> <a id="4656" class="Symbol">:</a> <a id="4658" class="Symbol">∀</a> <a id="4660" class="Symbol">{</a><a id="4661" href="plfa.Lists.html#4661" class="Bound">A</a> <a id="4663" class="Symbol">:</a> <a id="4665" class="PrimitiveType">Set</a><a id="4668" class="Symbol">}</a> <a id="4670" class="Symbol">→</a> <a id="4672" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="4677" href="plfa.Lists.html#4661" class="Bound">A</a> <a id="4679" class="Symbol">→</a> <a id="4681" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="4686" href="plfa.Lists.html#4661" class="Bound">A</a> <a id="4688" class="Symbol">→</a> <a id="4690" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="4695" href="plfa.Lists.html#4661" class="Bound">A</a>
+<a id="4697" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1313" class="InductiveConstructor">[]</a>       <a id="4706" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="4709" href="plfa.Lists.html#4709" class="Bound">ys</a>  <a id="4713" class="Symbol">=</a>  <a id="4716" href="plfa.Lists.html#4709" class="Bound">ys</a>
+<a id="4719" class="Symbol">(</a><a id="4720" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#4720" class="Bound">x</a> <a id="4722" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="4724" href="plfa.Lists.html#4724" class="Bound">xs</a><a id="4726" class="Symbol">)</a> <a id="4728" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="4731" href="plfa.Lists.html#4731" class="Bound">ys</a>  <a id="4735" class="Symbol">=</a>  <a id="4738" href="plfa.Lists.html#4720" class="Bound">x</a> <a id="4740" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="4742" class="Symbol">(</a><a id="4743" href="plfa.Lists.html#4724" class="Bound">xs</a> <a id="4746" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="4749" href="plfa.Lists.html#4731" class="Bound">ys</a><a id="4751" class="Symbol">)</a>
+</pre>{% endraw %}
+{::comment}
+The type `A` is an implicit argument to append, making it a
+_polymorphic_ function (one that can be used at many types).  The
+empty list appended to another list yields the other list.  A
+non-empty list appended to another list yields a list with head the
+same as the head of the first list and tail the same as the tail of
+the first list appended to the second list.
+{:/}
+
+`A` 类型是附加的隐式参数，这让这个函数变为一个*多态*（Polymorphic）函数
+（即可以用作多种类型）。空列表附加到另一个列表得到是第二个列表。非空列表附加到
+另一个列表，得到的列表的头是第一个列表的头，尾是第一个列表的尾附加至第二个列表的结果。
+
+{::comment}
+Here is an example, showing how to compute the result
+of appending two lists:
+{:/}
+
+我们举个例子，来展示将两个列表附加的计算过程：
+
+{% raw %}<pre class="Agda"><a id="5399" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#5399" class="Function">_</a> <a id="5401" class="Symbol">:</a> <a id="5403" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">[</a> <a id="5405" class="Number">0</a> <a id="5407" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="5409" class="Number">1</a> <a id="5411" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="5413" class="Number">2</a> <a id="5415" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a> <a id="5417" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="5420" href="plfa.Lists.html#3841" class="InductiveConstructor Operator">[</a> <a id="5422" class="Number">3</a> <a id="5424" href="plfa.Lists.html#3841" class="InductiveConstructor Operator">,</a> <a id="5426" class="Number">4</a> <a id="5428" href="plfa.Lists.html#3841" class="InductiveConstructor Operator">]</a> <a id="5430" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="5432" href="plfa.Lists.html#3958" class="InductiveConstructor Operator">[</a> <a id="5434" class="Number">0</a> <a id="5436" href="plfa.Lists.html#3958" class="InductiveConstructor Operator">,</a> <a id="5438" class="Number">1</a> <a id="5440" href="plfa.Lists.html#3958" class="InductiveConstructor Operator">,</a> <a id="5442" class="Number">2</a> <a id="5444" href="plfa.Lists.html#3958" class="InductiveConstructor Operator">,</a> <a id="5446" class="Number">3</a> <a id="5448" href="plfa.Lists.html#3958" class="InductiveConstructor Operator">,</a> <a id="5450" class="Number">4</a> <a id="5452" href="plfa.Lists.html#3958" class="InductiveConstructor Operator">]</a>
+<a id="5454" class="Symbol">_</a> <a id="5456" class="Symbol">=</a>
+  <a id="5460" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="5470" class="Number">0</a> <a id="5472" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="5474" class="Number">1</a> <a id="5476" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5478" class="Number">2</a> <a id="5480" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5482" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="5485" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="5488" class="Number">3</a> <a id="5490" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5492" class="Number">4</a> <a id="5494" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5496" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="5501" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="5509" class="Number">0</a> <a id="5511" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="5513" class="Symbol">(</a><a id="5514" class="Number">1</a> <a id="5516" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5518" class="Number">2</a> <a id="5520" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5522" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="5525" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="5528" class="Number">3</a> <a id="5530" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5532" class="Number">4</a> <a id="5534" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5536" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="5538" class="Symbol">)</a>
+  <a id="5542" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="5550" class="Number">0</a> <a id="5552" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="5554" class="Number">1</a> <a id="5556" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5558" class="Symbol">(</a><a id="5559" class="Number">2</a> <a id="5561" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5563" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="5566" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="5569" class="Number">3</a> <a id="5571" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5573" class="Number">4</a> <a id="5575" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5577" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="5579" class="Symbol">)</a>
+  <a id="5583" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="5591" class="Number">0</a> <a id="5593" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="5595" class="Number">1</a> <a id="5597" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5599" class="Number">2</a> <a id="5601" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5603" class="Symbol">(</a><a id="5604" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="5607" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="5610" class="Number">3</a> <a id="5612" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5614" class="Number">4</a> <a id="5616" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5618" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="5620" class="Symbol">)</a>
+  <a id="5624" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="5632" class="Number">0</a> <a id="5634" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="5636" class="Number">1</a> <a id="5638" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5640" class="Number">2</a> <a id="5642" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5644" class="Number">3</a> <a id="5646" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5648" class="Number">4</a> <a id="5650" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="5652" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="5657" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+Appending two lists requires time linear in the
+number of elements in the first list.
+{:/}
+
+附加两个列表需要对于第一个列表元素个数线性的时间。
+
+
+{::comment}
+## Reasoning about append
+{:/}
+
+## 论证附加
+
+{::comment}
+We can reason about lists in much the same way that we reason
+about numbers.  Here is the proof that append is associative:
+{:/}
+
+我们可以与用论证数几乎相同的方法来论证列表。下面是附加满足结合律的证明：
+{% raw %}<pre class="Agda"><a id="++-assoc"></a><a id="6032" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#6032" class="Function">++-assoc</a> <a id="6041" class="Symbol">:</a> <a id="6043" class="Symbol">∀</a> <a id="6045" class="Symbol">{</a><a id="6046" href="plfa.Lists.html#6046" class="Bound">A</a> <a id="6048" class="Symbol">:</a> <a id="6050" class="PrimitiveType">Set</a><a id="6053" class="Symbol">}</a> <a id="6055" class="Symbol">(</a><a id="6056" href="plfa.Lists.html#6056" class="Bound">xs</a> <a id="6059" href="plfa.Lists.html#6059" class="Bound">ys</a> <a id="6062" href="plfa.Lists.html#6062" class="Bound">zs</a> <a id="6065" class="Symbol">:</a> <a id="6067" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="6072" href="plfa.Lists.html#6046" class="Bound">A</a><a id="6073" class="Symbol">)</a>
+  <a id="6077" class="Symbol">→</a> <a id="6079" class="Symbol">(</a><a id="6080" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#6056" class="Bound">xs</a> <a id="6083" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6086" href="plfa.Lists.html#6059" class="Bound">ys</a><a id="6088" class="Symbol">)</a> <a id="6090" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6093" href="plfa.Lists.html#6062" class="Bound">zs</a> <a id="6096" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="6098" href="plfa.Lists.html#6056" class="Bound">xs</a> <a id="6101" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6104" class="Symbol">(</a><a id="6105" href="plfa.Lists.html#6059" class="Bound">ys</a> <a id="6108" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6111" href="plfa.Lists.html#6062" class="Bound">zs</a><a id="6113" class="Symbol">)</a>
+<a id="6115" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#6032" class="Function">++-assoc</a> <a id="6124" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="6127" href="plfa.Lists.html#6127" class="Bound">ys</a> <a id="6130" href="plfa.Lists.html#6130" class="Bound">zs</a> <a id="6133" class="Symbol">=</a>
+  <a id="6137" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="6147" class="Symbol">(</a><a id="6148" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1313" class="InductiveConstructor">[]</a> <a id="6151" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6154" href="plfa.Lists.html#6127" class="Bound">ys</a><a id="6156" class="Symbol">)</a> <a id="6158" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6161" href="plfa.Lists.html#6130" class="Bound">zs</a>
+  <a id="6166" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="6174" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#6127" class="Bound">ys</a> <a id="6177" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6180" href="plfa.Lists.html#6130" class="Bound">zs</a>
+  <a id="6185" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="6193" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1313" class="InductiveConstructor">[]</a> <a id="6196" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6199" class="Symbol">(</a><a id="6200" href="plfa.Lists.html#6127" class="Bound">ys</a> <a id="6203" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6206" href="plfa.Lists.html#6130" class="Bound">zs</a><a id="6208" class="Symbol">)</a>
+  <a id="6212" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+<a id="6214" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#6032" class="Function">++-assoc</a> <a id="6223" class="Symbol">(</a><a id="6224" href="plfa.Lists.html#6224" class="Bound">x</a> <a id="6226" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="6228" href="plfa.Lists.html#6228" class="Bound">xs</a><a id="6230" class="Symbol">)</a> <a id="6232" href="plfa.Lists.html#6232" class="Bound">ys</a> <a id="6235" href="plfa.Lists.html#6235" class="Bound">zs</a> <a id="6238" class="Symbol">=</a>
+  <a id="6242" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="6252" class="Symbol">(</a><a id="6253" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#6224" class="Bound">x</a> <a id="6255" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="6257" href="plfa.Lists.html#6228" class="Bound">xs</a> <a id="6260" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6263" href="plfa.Lists.html#6232" class="Bound">ys</a><a id="6265" class="Symbol">)</a> <a id="6267" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6270" href="plfa.Lists.html#6235" class="Bound">zs</a>
+  <a id="6275" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="6283" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#6224" class="Bound">x</a> <a id="6285" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="6287" class="Symbol">(</a><a id="6288" href="plfa.Lists.html#6228" class="Bound">xs</a> <a id="6291" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6294" href="plfa.Lists.html#6232" class="Bound">ys</a><a id="6296" class="Symbol">)</a> <a id="6298" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6301" href="plfa.Lists.html#6235" class="Bound">zs</a>
+  <a id="6306" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="6314" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#6224" class="Bound">x</a> <a id="6316" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="6318" class="Symbol">((</a><a id="6320" href="plfa.Lists.html#6228" class="Bound">xs</a> <a id="6323" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6326" href="plfa.Lists.html#6232" class="Bound">ys</a><a id="6328" class="Symbol">)</a> <a id="6330" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6333" href="plfa.Lists.html#6235" class="Bound">zs</a><a id="6335" class="Symbol">)</a>
+  <a id="6339" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">≡⟨</a> <a id="6342" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#1090" class="Function">cong</a> <a id="6347" class="Symbol">(</a><a id="6348" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#6224" class="Bound">x</a> <a id="6350" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷_</a><a id="6352" class="Symbol">)</a> <a id="6354" class="Symbol">(</a><a id="6355" href="plfa.Lists.html#6032" class="Function">++-assoc</a> <a id="6364" href="plfa.Lists.html#6228" class="Bound">xs</a> <a id="6367" href="plfa.Lists.html#6232" class="Bound">ys</a> <a id="6370" href="plfa.Lists.html#6235" class="Bound">zs</a><a id="6372" class="Symbol">)</a> <a id="6374" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">⟩</a>
+    <a id="6380" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#6224" class="Bound">x</a> <a id="6382" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="6384" class="Symbol">(</a><a id="6385" href="plfa.Lists.html#6228" class="Bound">xs</a> <a id="6388" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6391" class="Symbol">(</a><a id="6392" href="plfa.Lists.html#6232" class="Bound">ys</a> <a id="6395" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6398" href="plfa.Lists.html#6235" class="Bound">zs</a><a id="6400" class="Symbol">))</a>
+  <a id="6405" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="6413" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#6224" class="Bound">x</a> <a id="6415" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="6417" href="plfa.Lists.html#6228" class="Bound">xs</a> <a id="6420" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6423" class="Symbol">(</a><a id="6424" href="plfa.Lists.html#6232" class="Bound">ys</a> <a id="6427" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="6430" href="plfa.Lists.html#6235" class="Bound">zs</a><a id="6432" class="Symbol">)</a>
+  <a id="6436" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+The proof is by induction on the first argument. The base case instantiates
+to `[]`, and follows by straightforward computation.
+The inductive case instantiates to `x ∷ xs`,
+and follows by straightforward computation combined with the
+inductive hypothesis.  As usual, the inductive hypothesis is indicated by a recursive
+invocation of the proof, in this case `++-assoc xs ys zs`.
+{:/}
+
+证明对于第一个参数进行归纳。起始步骤将列表实例化为 `[]`，由直接的运算可证。
+归纳步骤将列表实例化为 `x ∷ xs`，由直接的运算配合归纳假设可证。
+与往常一样，归纳假设由递归使用证明函数来表明，此处为 `++-assoc xs ys zs`。
+
+{::comment}
+Recall that Agda supports [sections][plfa.Induction#sections].
+Applying `cong (x ∷_)` promotes the inductive hypothesis:
+{:/}
+
+回忆到 Agda 支持[片段][plfa.Induction#sections]。使用 `cong (x ∷_)`
+可以将归纳假设：
+
+    (xs ++ ys) ++ zs ≡ xs ++ (ys ++ zs)
+
+{::comment}
+to the equality:
+{:/}
+
+提升至等式：
+
+    x ∷ ((xs ++ ys) ++ zs) ≡ x ∷ (xs ++ (ys ++ zs))
+
+{::comment}
+which is needed in the proof.
+{:/}
+
+即证明中所需。
+
+{::comment}
+It is also easy to show that `[]` is a left and right identity for `_++_`.
+That it is a left identity is immediate from the definition:
+{:/}
+
+我们也可以简单地证明 `[]` 是 `_++_` 的左幺元和右幺元。
+左幺元的证明从定义中即可得：
+
+{% raw %}<pre class="Agda"><a id="++-identityˡ"></a><a id="7578" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#7578" class="Function">++-identityˡ</a> <a id="7591" class="Symbol">:</a> <a id="7593" class="Symbol">∀</a> <a id="7595" class="Symbol">{</a><a id="7596" href="plfa.Lists.html#7596" class="Bound">A</a> <a id="7598" class="Symbol">:</a> <a id="7600" class="PrimitiveType">Set</a><a id="7603" class="Symbol">}</a> <a id="7605" class="Symbol">(</a><a id="7606" href="plfa.Lists.html#7606" class="Bound">xs</a> <a id="7609" class="Symbol">:</a> <a id="7611" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="7616" href="plfa.Lists.html#7596" class="Bound">A</a><a id="7617" class="Symbol">)</a> <a id="7619" class="Symbol">→</a> <a id="7621" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="7624" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="7627" href="plfa.Lists.html#7606" class="Bound">xs</a> <a id="7630" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="7632" href="plfa.Lists.html#7606" class="Bound">xs</a>
+<a id="7635" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#7578" class="Function">++-identityˡ</a> <a id="7648" href="plfa.Lists.html#7648" class="Bound">xs</a> <a id="7651" class="Symbol">=</a>
+  <a id="7655" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="7665" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1313" class="InductiveConstructor">[]</a> <a id="7668" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="7671" href="plfa.Lists.html#7648" class="Bound">xs</a>
+  <a id="7676" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="7684" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#7648" class="Bound">xs</a>
+  <a id="7689" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+That it is a right identity follows by simple induction:
+{:/}
+
+右幺元的证明可由简单的归纳得到：
+{% raw %}<pre class="Agda"><a id="++-identityʳ"></a><a id="7792" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#7792" class="Function">++-identityʳ</a> <a id="7805" class="Symbol">:</a> <a id="7807" class="Symbol">∀</a> <a id="7809" class="Symbol">{</a><a id="7810" href="plfa.Lists.html#7810" class="Bound">A</a> <a id="7812" class="Symbol">:</a> <a id="7814" class="PrimitiveType">Set</a><a id="7817" class="Symbol">}</a> <a id="7819" class="Symbol">(</a><a id="7820" href="plfa.Lists.html#7820" class="Bound">xs</a> <a id="7823" class="Symbol">:</a> <a id="7825" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="7830" href="plfa.Lists.html#7810" class="Bound">A</a><a id="7831" class="Symbol">)</a> <a id="7833" class="Symbol">→</a> <a id="7835" href="plfa.Lists.html#7820" class="Bound">xs</a> <a id="7838" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="7841" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="7844" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="7846" href="plfa.Lists.html#7820" class="Bound">xs</a>
+<a id="7849" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#7792" class="Function">++-identityʳ</a> <a id="7862" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="7865" class="Symbol">=</a>
+  <a id="7869" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="7879" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1313" class="InductiveConstructor">[]</a> <a id="7882" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="7885" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="7890" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="7898" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1313" class="InductiveConstructor">[]</a>
+  <a id="7903" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+<a id="7905" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#7792" class="Function">++-identityʳ</a> <a id="7918" class="Symbol">(</a><a id="7919" href="plfa.Lists.html#7919" class="Bound">x</a> <a id="7921" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="7923" href="plfa.Lists.html#7923" class="Bound">xs</a><a id="7925" class="Symbol">)</a> <a id="7927" class="Symbol">=</a>
+  <a id="7931" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="7941" class="Symbol">(</a><a id="7942" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#7919" class="Bound">x</a> <a id="7944" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="7946" href="plfa.Lists.html#7923" class="Bound">xs</a><a id="7948" class="Symbol">)</a> <a id="7950" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="7953" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="7958" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="7966" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#7919" class="Bound">x</a> <a id="7968" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="7970" class="Symbol">(</a><a id="7971" href="plfa.Lists.html#7923" class="Bound">xs</a> <a id="7974" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="7977" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="7979" class="Symbol">)</a>
+  <a id="7983" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">≡⟨</a> <a id="7986" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#1090" class="Function">cong</a> <a id="7991" class="Symbol">(</a><a id="7992" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#7919" class="Bound">x</a> <a id="7994" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷_</a><a id="7996" class="Symbol">)</a> <a id="7998" class="Symbol">(</a><a id="7999" href="plfa.Lists.html#7792" class="Function">++-identityʳ</a> <a id="8012" href="plfa.Lists.html#7923" class="Bound">xs</a><a id="8014" class="Symbol">)</a> <a id="8016" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">⟩</a>
+    <a id="8022" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#7919" class="Bound">x</a> <a id="8024" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="8026" href="plfa.Lists.html#7923" class="Bound">xs</a>
+  <a id="8031" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+As we will see later,
+these three properties establish that `_++_` and `[]` form
+a _monoid_ over lists.
+{:/}
+
+我们之后会了解到，这三条性质表明了 `_++_` 和 `[]` 在列表上构成了一个*幺半群*（Monoid）。
+
+{::comment}
+## Length
+{:/}
+
+## 长度
+
+{::comment}
+Our next function finds the length of a list:
+{:/}
+
+在下一个函数里，我们来寻找列表的长度：
+
+{% raw %}<pre class="Agda"><a id="length"></a><a id="8341" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="8348" class="Symbol">:</a> <a id="8350" class="Symbol">∀</a> <a id="8352" class="Symbol">{</a><a id="8353" href="plfa.Lists.html#8353" class="Bound">A</a> <a id="8355" class="Symbol">:</a> <a id="8357" class="PrimitiveType">Set</a><a id="8360" class="Symbol">}</a> <a id="8362" class="Symbol">→</a> <a id="8364" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="8369" href="plfa.Lists.html#8353" class="Bound">A</a> <a id="8371" class="Symbol">→</a> <a id="8373" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a>
+<a id="8375" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="8382" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>        <a id="8392" class="Symbol">=</a>  <a id="8395" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#183" class="InductiveConstructor">zero</a>
+<a id="8400" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="8407" class="Symbol">(</a><a id="8408" href="plfa.Lists.html#8408" class="Bound">x</a> <a id="8410" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="8412" href="plfa.Lists.html#8412" class="Bound">xs</a><a id="8414" class="Symbol">)</a>  <a id="8417" class="Symbol">=</a>  <a id="8420" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="8424" class="Symbol">(</a><a id="8425" href="plfa.Lists.html#8341" class="Function">length</a> <a id="8432" href="plfa.Lists.html#8412" class="Bound">xs</a><a id="8434" class="Symbol">)</a>
+</pre>{% endraw %}
+{::comment}
+Again, it takes an implicit parameter `A`.
+The length of the empty list is zero.
+The length of a non-empty list
+is one greater than the length of the tail of the list.
+{:/}
+
+同样，它取一个隐式参数 `A`。
+空列表的长度为零。非空列表的长度比其尾列表长度多一。
+
+{::comment}
+Here is an example showing how to compute the length of a list:
+{:/}
+
+我们用下面的例子来展示如何计算列表的长度：
+{% raw %}<pre class="Agda"><a id="8780" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8780" class="Function">_</a> <a id="8782" class="Symbol">:</a> <a id="8784" href="plfa.Lists.html#8341" class="Function">length</a> <a id="8791" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">[</a> <a id="8793" class="Number">0</a> <a id="8795" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="8797" class="Number">1</a> <a id="8799" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="8801" class="Number">2</a> <a id="8803" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a> <a id="8805" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="8807" class="Number">3</a>
+<a id="8809" class="Symbol">_</a> <a id="8811" class="Symbol">=</a>
+  <a id="8815" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="8825" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="8832" class="Symbol">(</a><a id="8833" class="Number">0</a> <a id="8835" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="8837" class="Number">1</a> <a id="8839" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="8841" class="Number">2</a> <a id="8843" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="8845" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="8847" class="Symbol">)</a>
+  <a id="8851" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="8859" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="8863" class="Symbol">(</a><a id="8864" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="8871" class="Symbol">(</a><a id="8872" class="Number">1</a> <a id="8874" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="8876" class="Number">2</a> <a id="8878" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="8880" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="8882" class="Symbol">))</a>
+  <a id="8887" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="8895" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="8899" class="Symbol">(</a><a id="8900" href="Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="8904" class="Symbol">(</a><a id="8905" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="8912" class="Symbol">(</a><a id="8913" class="Number">2</a> <a id="8915" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="8917" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="8919" class="Symbol">)))</a>
+  <a id="8925" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="8933" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="8937" class="Symbol">(</a><a id="8938" href="Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="8942" class="Symbol">(</a><a id="8943" href="Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="8947" class="Symbol">(</a><a id="8948" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="8955" class="Symbol">{</a><a id="8956" href="Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a><a id="8957" class="Symbol">}</a> <a id="8959" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="8961" class="Symbol">)))</a>
+  <a id="8967" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="8975" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="8979" class="Symbol">(</a><a id="8980" href="Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="8984" class="Symbol">(</a><a id="8985" href="Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="8989" href="Agda.Builtin.Nat.html#183" class="InductiveConstructor">zero</a><a id="8993" class="Symbol">))</a>
+  <a id="8998" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+Computing the length of a list requires time
+linear in the number of elements in the list.
+{:/}
+
+计算列表的长度需要关于列表元素个数线性的时间。
+
+{::comment}
+In the second-to-last line, we cannot write simply `length []` but
+must instead write `length {ℕ} []`.  Since `[]` has no elements, Agda
+has insufficient information to infer the implicit parameter.
+{:/}
+
+在倒数第二行中，我们不可以直接写 `length []`，而需要写 `length {ℕ} []`。
+因为 `[]` 没有元素，Agda 没有足够的信息来推导其隐式参数。
+
+{::comment}
+## Reasoning about length
+{:/}
+
+## 论证长度
+
+{::comment}
+The length of one list appended to another is the
+sum of the lengths of the lists:
+{:/}
+
+两个附加在一起的列表的长度是两列表长度之和：
+
+{% raw %}<pre class="Agda"><a id="length-++"></a><a id="9625" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#9625" class="Function">length-++</a> <a id="9635" class="Symbol">:</a> <a id="9637" class="Symbol">∀</a> <a id="9639" class="Symbol">{</a><a id="9640" href="plfa.Lists.html#9640" class="Bound">A</a> <a id="9642" class="Symbol">:</a> <a id="9644" class="PrimitiveType">Set</a><a id="9647" class="Symbol">}</a> <a id="9649" class="Symbol">(</a><a id="9650" href="plfa.Lists.html#9650" class="Bound">xs</a> <a id="9653" href="plfa.Lists.html#9653" class="Bound">ys</a> <a id="9656" class="Symbol">:</a> <a id="9658" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="9663" href="plfa.Lists.html#9640" class="Bound">A</a><a id="9664" class="Symbol">)</a>
+  <a id="9668" class="Symbol">→</a> <a id="9670" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="9677" class="Symbol">(</a><a id="9678" href="plfa.Lists.html#9650" class="Bound">xs</a> <a id="9681" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="9684" href="plfa.Lists.html#9653" class="Bound">ys</a><a id="9686" class="Symbol">)</a> <a id="9688" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="9690" href="plfa.Lists.html#8341" class="Function">length</a> <a id="9697" href="plfa.Lists.html#9650" class="Bound">xs</a> <a id="9700" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="9702" href="plfa.Lists.html#8341" class="Function">length</a> <a id="9709" href="plfa.Lists.html#9653" class="Bound">ys</a>
+<a id="9712" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#9625" class="Function">length-++</a> <a id="9722" class="Symbol">{</a><a id="9723" href="plfa.Lists.html#9723" class="Bound">A</a><a id="9724" class="Symbol">}</a> <a id="9726" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="9729" href="plfa.Lists.html#9729" class="Bound">ys</a> <a id="9732" class="Symbol">=</a>
+  <a id="9736" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="9746" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="9753" class="Symbol">(</a><a id="9754" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="9757" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="9760" href="plfa.Lists.html#9729" class="Bound">ys</a><a id="9762" class="Symbol">)</a>
+  <a id="9766" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="9774" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="9781" href="plfa.Lists.html#9729" class="Bound">ys</a>
+  <a id="9786" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="9794" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="9801" class="Symbol">{</a><a id="9802" href="plfa.Lists.html#9723" class="Bound">A</a><a id="9803" class="Symbol">}</a> <a id="9805" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="9808" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="9810" href="plfa.Lists.html#8341" class="Function">length</a> <a id="9817" href="plfa.Lists.html#9729" class="Bound">ys</a>
+  <a id="9822" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+<a id="9824" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#9625" class="Function">length-++</a> <a id="9834" class="Symbol">(</a><a id="9835" href="plfa.Lists.html#9835" class="Bound">x</a> <a id="9837" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="9839" href="plfa.Lists.html#9839" class="Bound">xs</a><a id="9841" class="Symbol">)</a> <a id="9843" href="plfa.Lists.html#9843" class="Bound">ys</a> <a id="9846" class="Symbol">=</a>
+  <a id="9850" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="9860" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="9867" class="Symbol">((</a><a id="9869" href="plfa.Lists.html#9835" class="Bound">x</a> <a id="9871" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="9873" href="plfa.Lists.html#9839" class="Bound">xs</a><a id="9875" class="Symbol">)</a> <a id="9877" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="9880" href="plfa.Lists.html#9843" class="Bound">ys</a><a id="9882" class="Symbol">)</a>
+  <a id="9886" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="9894" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="9898" class="Symbol">(</a><a id="9899" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="9906" class="Symbol">(</a><a id="9907" href="plfa.Lists.html#9839" class="Bound">xs</a> <a id="9910" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="9913" href="plfa.Lists.html#9843" class="Bound">ys</a><a id="9915" class="Symbol">))</a>
+  <a id="9920" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">≡⟨</a> <a id="9923" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#1090" class="Function">cong</a> <a id="9928" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="9932" class="Symbol">(</a><a id="9933" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#9625" class="Function">length-++</a> <a id="9943" href="plfa.Lists.html#9839" class="Bound">xs</a> <a id="9946" href="plfa.Lists.html#9843" class="Bound">ys</a><a id="9948" class="Symbol">)</a> <a id="9950" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">⟩</a>
+    <a id="9956" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="9960" class="Symbol">(</a><a id="9961" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="9968" href="plfa.Lists.html#9839" class="Bound">xs</a> <a id="9971" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="9973" href="plfa.Lists.html#8341" class="Function">length</a> <a id="9980" href="plfa.Lists.html#9843" class="Bound">ys</a><a id="9982" class="Symbol">)</a>
+  <a id="9986" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="9994" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#8341" class="Function">length</a> <a id="10001" class="Symbol">(</a><a id="10002" href="plfa.Lists.html#9835" class="Bound">x</a> <a id="10004" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="10006" href="plfa.Lists.html#9839" class="Bound">xs</a><a id="10008" class="Symbol">)</a> <a id="10010" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="10012" href="plfa.Lists.html#8341" class="Function">length</a> <a id="10019" href="plfa.Lists.html#9843" class="Bound">ys</a>
+  <a id="10024" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+The proof is by induction on the first argument. The base case
+instantiates to `[]`, and follows by straightforward computation.  As
+before, Agda cannot infer the implicit type parameter to `length`, and
+it must be given explicitly.  The inductive case instantiates to
+`x ∷ xs`, and follows by straightforward computation combined with the
+inductive hypothesis.  As usual, the inductive hypothesis is indicated
+by a recursive invocation of the proof, in this case `length-++ xs ys`,
+and it is promoted by the congruence `cong suc`.
+{:/}
+
+证明对于第一个参数进行归纳。起始步骤将列表实例化为 `[]`，由直接的运算可证。
+如同之前一样，Agda 无法推导 `length` 的隐式参数，所以我们必须显式地给出这个参数。
+归纳步骤将列表实例化为 `x ∷ xs`，由直接的运算配合归纳假设可证。
+与往常一样，归纳假设由递归使用证明函数来表明，此处为 `length-++ xs ys`，
+由 `cong suc` 来提升。
+
+{::comment}
+## Reverse
+{:/}
+
+## 反转
+
+{::comment}
+Using append, it is easy to formulate a function to reverse a list:
+{:/}
+
+我们可以使用附加，来简单地构造一个函数来反转一个列表：
+{% raw %}<pre class="Agda"><a id="reverse"></a><a id="10927" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="10935" class="Symbol">:</a> <a id="10937" class="Symbol">∀</a> <a id="10939" class="Symbol">{</a><a id="10940" href="plfa.Lists.html#10940" class="Bound">A</a> <a id="10942" class="Symbol">:</a> <a id="10944" class="PrimitiveType">Set</a><a id="10947" class="Symbol">}</a> <a id="10949" class="Symbol">→</a> <a id="10951" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="10956" href="plfa.Lists.html#10940" class="Bound">A</a> <a id="10958" class="Symbol">→</a> <a id="10960" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="10965" href="plfa.Lists.html#10940" class="Bound">A</a>
+<a id="10967" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="10975" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>        <a id="10985" class="Symbol">=</a>  <a id="10988" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+<a id="10991" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="10999" class="Symbol">(</a><a id="11000" href="plfa.Lists.html#11000" class="Bound">x</a> <a id="11002" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11004" href="plfa.Lists.html#11004" class="Bound">xs</a><a id="11006" class="Symbol">)</a>  <a id="11009" class="Symbol">=</a>  <a id="11012" href="plfa.Lists.html#10927" class="Function">reverse</a> <a id="11020" href="plfa.Lists.html#11004" class="Bound">xs</a> <a id="11023" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11026" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">[</a> <a id="11028" href="plfa.Lists.html#11000" class="Bound">x</a> <a id="11030" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">]</a>
+</pre>{% endraw %}
+{::comment}
+The reverse of the empty list is the empty list.
+The reverse of a non-empty list
+is the reverse of its tail appended to a unit list
+containing its head.
+{:/}
+
+空列表的反转是空列表。
+非空列表的反转是其头元素构成的单元列表附加至其尾列表反转之后的结果。
+
+{::comment}
+Here is an example showing how to reverse a list:
+{:/}
+
+下面的例子展示了如何反转一个列表。
+{% raw %}<pre class="Agda"><a id="11346" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#11346" class="Function">_</a> <a id="11348" class="Symbol">:</a> <a id="11350" href="plfa.Lists.html#10927" class="Function">reverse</a> <a id="11358" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">[</a> <a id="11360" class="Number">0</a> <a id="11362" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="11364" class="Number">1</a> <a id="11366" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="11368" class="Number">2</a> <a id="11370" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a> <a id="11372" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="11374" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">[</a> <a id="11376" class="Number">2</a> <a id="11378" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="11380" class="Number">1</a> <a id="11382" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="11384" class="Number">0</a> <a id="11386" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a>
+<a id="11388" class="Symbol">_</a> <a id="11390" class="Symbol">=</a>
+  <a id="11394" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="11404" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="11412" class="Symbol">(</a><a id="11413" class="Number">0</a> <a id="11415" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11417" class="Number">1</a> <a id="11419" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11421" class="Number">2</a> <a id="11423" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11425" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="11427" class="Symbol">)</a>
+  <a id="11431" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="11439" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="11447" class="Symbol">(</a><a id="11448" class="Number">1</a> <a id="11450" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11452" class="Number">2</a> <a id="11454" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11456" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="11458" class="Symbol">)</a> <a id="11460" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11463" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">[</a> <a id="11465" class="Number">0</a> <a id="11467" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">]</a>
+  <a id="11471" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="11479" class="Symbol">(</a><a id="11480" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="11488" class="Symbol">(</a><a id="11489" class="Number">2</a> <a id="11491" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11493" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="11495" class="Symbol">)</a> <a id="11497" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11500" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">[</a> <a id="11502" class="Number">1</a> <a id="11504" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">]</a><a id="11505" class="Symbol">)</a> <a id="11507" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11510" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">[</a> <a id="11512" class="Number">0</a> <a id="11514" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">]</a>
+  <a id="11518" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="11526" class="Symbol">((</a><a id="11528" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="11536" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="11539" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11542" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">[</a> <a id="11544" class="Number">2</a> <a id="11546" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">]</a><a id="11547" class="Symbol">)</a> <a id="11549" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11552" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">[</a> <a id="11554" class="Number">1</a> <a id="11556" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">]</a><a id="11557" class="Symbol">)</a> <a id="11559" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11562" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">[</a> <a id="11564" class="Number">0</a> <a id="11566" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">]</a>
+  <a id="11570" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="11578" class="Symbol">((</a><a id="11580" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1313" class="InductiveConstructor">[]</a> <a id="11583" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11586" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">[</a> <a id="11588" class="Number">2</a> <a id="11590" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">]</a><a id="11591" class="Symbol">)</a> <a id="11593" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11596" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">[</a> <a id="11598" class="Number">1</a> <a id="11600" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">]</a><a id="11601" class="Symbol">)</a> <a id="11603" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11606" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">[</a> <a id="11608" class="Number">0</a> <a id="11610" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">]</a>
+  <a id="11614" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="11622" class="Symbol">((</a><a id="11624" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1313" class="InductiveConstructor">[]</a> <a id="11627" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11630" class="Number">2</a> <a id="11632" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11634" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="11636" class="Symbol">)</a> <a id="11638" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11641" class="Number">1</a> <a id="11643" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11645" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="11647" class="Symbol">)</a> <a id="11649" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11652" class="Number">0</a> <a id="11654" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11656" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="11661" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="11669" class="Symbol">(</a><a id="11670" class="Number">2</a> <a id="11672" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="11674" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="11677" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11680" class="Number">1</a> <a id="11682" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11684" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="11686" class="Symbol">)</a> <a id="11688" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11691" class="Number">0</a> <a id="11693" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11695" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="11700" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="11708" class="Number">2</a> <a id="11710" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="11712" class="Symbol">(</a><a id="11713" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="11716" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11719" class="Number">1</a> <a id="11721" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11723" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="11725" class="Symbol">)</a> <a id="11727" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11730" class="Number">0</a> <a id="11732" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11734" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="11739" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="11747" class="Symbol">(</a><a id="11748" class="Number">2</a> <a id="11750" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="11752" class="Number">1</a> <a id="11754" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11756" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="11758" class="Symbol">)</a> <a id="11760" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11763" class="Number">0</a> <a id="11765" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11767" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="11772" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="11780" class="Number">2</a> <a id="11782" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="11784" class="Symbol">(</a><a id="11785" class="Number">1</a> <a id="11787" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11789" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="11792" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11795" class="Number">0</a> <a id="11797" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11799" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="11801" class="Symbol">)</a>
+  <a id="11805" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="11813" class="Number">2</a> <a id="11815" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="11817" class="Number">1</a> <a id="11819" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11821" class="Symbol">(</a><a id="11822" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="11825" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="11828" class="Number">0</a> <a id="11830" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11832" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="11834" class="Symbol">)</a>
+  <a id="11838" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="11846" class="Number">2</a> <a id="11848" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="11850" class="Number">1</a> <a id="11852" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11854" class="Number">0</a> <a id="11856" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="11858" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="11863" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="11871" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#3872" class="InductiveConstructor Operator">[</a> <a id="11873" class="Number">2</a> <a id="11875" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="11877" class="Number">1</a> <a id="11879" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="11881" class="Number">0</a> <a id="11883" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a>
+  <a id="11887" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+Reversing a list in this way takes time _quadratic_ in the length of
+the list. This is because reverse ends up appending lists of lengths
+`1`, `2`, up to `n - 1`, where `n` is the length of the list being
+reversed, append takes time linear in the length of the first
+list, and the sum of the numbers up to `n - 1` is `n * (n - 1) / 2`.
+(We will validate that last fact in an exercise later in this chapter.)
+{:/}
+
+这样子反转一个列表需要列表长度**二次**的时间。这是因为反转一个长度为 `n` 的列表需要
+将长度为 `1`、`2` 直到 `n - 1` 的列表附加起来，而附加两个列表需要第一个列表长度线性的时间，
+因此加起来就需要 `n * (n - 1) / 2` 的时间。（我们将在本章节后部分验证这一结果）
+
+{::comment}
+#### Exercise `reverse-++-commute` (recommended)
+{:/}
+
+#### 练习 `reverse-++-commute` （推荐）
+
+{::comment}
+Show that the reverse of one list appended to another is the
+reverse of the second appended to the reverse of the first:
+{:/}
+
+证明一个列表附加到另外一个列表的反转即是反转后的第二个列表附加至反转后的第一个列表：
+{% raw %}<pre class="Agda"><a id="12761" class="Keyword">postulate</a>
+  <a id="reverse-++-commute"></a><a id="12773" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#12773" class="Postulate">reverse-++-commute</a> <a id="12792" class="Symbol">:</a> <a id="12794" class="Symbol">∀</a> <a id="12796" class="Symbol">{</a><a id="12797" href="plfa.Lists.html#12797" class="Bound">A</a> <a id="12799" class="Symbol">:</a> <a id="12801" class="PrimitiveType">Set</a><a id="12804" class="Symbol">}</a> <a id="12806" class="Symbol">{</a><a id="12807" href="plfa.Lists.html#12807" class="Bound">xs</a> <a id="12810" href="plfa.Lists.html#12810" class="Bound">ys</a> <a id="12813" class="Symbol">:</a> <a id="12815" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="12820" href="plfa.Lists.html#12797" class="Bound">A</a><a id="12821" class="Symbol">}</a>
+    <a id="12827" class="Symbol">→</a> <a id="12829" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="12837" class="Symbol">(</a><a id="12838" href="plfa.Lists.html#12807" class="Bound">xs</a> <a id="12841" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="12844" href="plfa.Lists.html#12810" class="Bound">ys</a><a id="12846" class="Symbol">)</a> <a id="12848" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="12850" href="plfa.Lists.html#10927" class="Function">reverse</a> <a id="12858" href="plfa.Lists.html#12810" class="Bound">ys</a> <a id="12861" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="12864" href="plfa.Lists.html#10927" class="Function">reverse</a> <a id="12872" href="plfa.Lists.html#12807" class="Bound">xs</a>
+</pre>{% endraw %}
+{::comment}
+#### Exercise `reverse-involutive` (recommended)
+{:/}
+
+#### 练习 `reverse-involutive` （推荐）
+
+{::comment}
+A function is an _involution_ if when applied twice it acts
+as the identity function.  Show that reverse is an involution:
+{:/}
+
+当一个函数应用两次后与恒等函数作用相同，那么这个函数是一个**对合**（Involution）。
+证明反转是一个对合：
+
+{% raw %}<pre class="Agda"><a id="13188" class="Keyword">postulate</a>
+  <a id="reverse-involutive"></a><a id="13200" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#13200" class="Postulate">reverse-involutive</a> <a id="13219" class="Symbol">:</a> <a id="13221" class="Symbol">∀</a> <a id="13223" class="Symbol">{</a><a id="13224" href="plfa.Lists.html#13224" class="Bound">A</a> <a id="13226" class="Symbol">:</a> <a id="13228" class="PrimitiveType">Set</a><a id="13231" class="Symbol">}</a> <a id="13233" class="Symbol">{</a><a id="13234" href="plfa.Lists.html#13234" class="Bound">xs</a> <a id="13237" class="Symbol">:</a> <a id="13239" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="13244" href="plfa.Lists.html#13224" class="Bound">A</a><a id="13245" class="Symbol">}</a>
+    <a id="13251" class="Symbol">→</a> <a id="13253" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="13261" class="Symbol">(</a><a id="13262" href="plfa.Lists.html#10927" class="Function">reverse</a> <a id="13270" href="plfa.Lists.html#13234" class="Bound">xs</a><a id="13272" class="Symbol">)</a> <a id="13274" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="13276" href="plfa.Lists.html#13234" class="Bound">xs</a>
+</pre>{% endraw %}
+
+{::comment}
+## Faster reverse
+{:/}
+
+## 更快地反转
+
+{::comment}
+The definition above, while easy to reason about, is less efficient than
+one might expect since it takes time quadratic in the length of the list.
+The idea is that we generalise reverse to take an additional argument:
+{:/}
+
+上面的定义虽然论证起来方便，但是它比期望中的实现更低效，因为它的运行时间是关于列表长度的二次函数。
+我们可以将反转进行推广，使用一个额外的参数：
+
+{% raw %}<pre class="Agda"><a id="shunt"></a><a id="13645" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#13645" class="Function">shunt</a> <a id="13651" class="Symbol">:</a> <a id="13653" class="Symbol">∀</a> <a id="13655" class="Symbol">{</a><a id="13656" href="plfa.Lists.html#13656" class="Bound">A</a> <a id="13658" class="Symbol">:</a> <a id="13660" class="PrimitiveType">Set</a><a id="13663" class="Symbol">}</a> <a id="13665" class="Symbol">→</a> <a id="13667" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="13672" href="plfa.Lists.html#13656" class="Bound">A</a> <a id="13674" class="Symbol">→</a> <a id="13676" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="13681" href="plfa.Lists.html#13656" class="Bound">A</a> <a id="13683" class="Symbol">→</a> <a id="13685" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="13690" href="plfa.Lists.html#13656" class="Bound">A</a>
+<a id="13692" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#13645" class="Function">shunt</a> <a id="13698" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>       <a id="13707" href="plfa.Lists.html#13707" class="Bound">ys</a>  <a id="13711" class="Symbol">=</a>  <a id="13714" href="plfa.Lists.html#13707" class="Bound">ys</a>
+<a id="13717" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#13645" class="Function">shunt</a> <a id="13723" class="Symbol">(</a><a id="13724" href="plfa.Lists.html#13724" class="Bound">x</a> <a id="13726" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="13728" href="plfa.Lists.html#13728" class="Bound">xs</a><a id="13730" class="Symbol">)</a> <a id="13732" href="plfa.Lists.html#13732" class="Bound">ys</a>  <a id="13736" class="Symbol">=</a>  <a id="13739" href="plfa.Lists.html#13645" class="Function">shunt</a> <a id="13745" href="plfa.Lists.html#13728" class="Bound">xs</a> <a id="13748" class="Symbol">(</a><a id="13749" href="plfa.Lists.html#13724" class="Bound">x</a> <a id="13751" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="13753" href="plfa.Lists.html#13732" class="Bound">ys</a><a id="13755" class="Symbol">)</a>
+</pre>{% endraw %}
+{::comment}
+The definition is by recursion on the first argument. The second argument
+actually becomes _larger_, but this is not a problem because the argument
+on which we recurse becomes _smaller_.
+{:/}
+
+这个定义对于第一个参数进行递归。第二个参数会变_大_，但这样做没有问题，因为我们递归的参数
+在变_小_。
+
+{::comment}
+Shunt is related to reverse as follows:
+{:/}
+
+转移（Shunt）与反转的关系如下：
+{% raw %}<pre class="Agda"><a id="shunt-reverse"></a><a id="14102" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#14102" class="Function">shunt-reverse</a> <a id="14116" class="Symbol">:</a> <a id="14118" class="Symbol">∀</a> <a id="14120" class="Symbol">{</a><a id="14121" href="plfa.Lists.html#14121" class="Bound">A</a> <a id="14123" class="Symbol">:</a> <a id="14125" class="PrimitiveType">Set</a><a id="14128" class="Symbol">}</a> <a id="14130" class="Symbol">(</a><a id="14131" href="plfa.Lists.html#14131" class="Bound">xs</a> <a id="14134" href="plfa.Lists.html#14134" class="Bound">ys</a> <a id="14137" class="Symbol">:</a> <a id="14139" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="14144" href="plfa.Lists.html#14121" class="Bound">A</a><a id="14145" class="Symbol">)</a>
+  <a id="14149" class="Symbol">→</a> <a id="14151" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#13645" class="Function">shunt</a> <a id="14157" href="plfa.Lists.html#14131" class="Bound">xs</a> <a id="14160" href="plfa.Lists.html#14134" class="Bound">ys</a> <a id="14163" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="14165" href="plfa.Lists.html#10927" class="Function">reverse</a> <a id="14173" href="plfa.Lists.html#14131" class="Bound">xs</a> <a id="14176" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="14179" href="plfa.Lists.html#14134" class="Bound">ys</a>
+<a id="14182" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#14102" class="Function">shunt-reverse</a> <a id="14196" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="14199" href="plfa.Lists.html#14199" class="Bound">ys</a> <a id="14202" class="Symbol">=</a>
+  <a id="14206" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="14216" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#13645" class="Function">shunt</a> <a id="14222" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="14225" href="plfa.Lists.html#14199" class="Bound">ys</a>
+  <a id="14230" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="14238" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#14199" class="Bound">ys</a>
+  <a id="14243" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="14251" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="14259" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="14262" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="14265" href="plfa.Lists.html#14199" class="Bound">ys</a>
+  <a id="14270" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+<a id="14272" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#14102" class="Function">shunt-reverse</a> <a id="14286" class="Symbol">(</a><a id="14287" href="plfa.Lists.html#14287" class="Bound">x</a> <a id="14289" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="14291" href="plfa.Lists.html#14291" class="Bound">xs</a><a id="14293" class="Symbol">)</a> <a id="14295" href="plfa.Lists.html#14295" class="Bound">ys</a> <a id="14298" class="Symbol">=</a>
+  <a id="14302" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="14312" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#13645" class="Function">shunt</a> <a id="14318" class="Symbol">(</a><a id="14319" href="plfa.Lists.html#14287" class="Bound">x</a> <a id="14321" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="14323" href="plfa.Lists.html#14291" class="Bound">xs</a><a id="14325" class="Symbol">)</a> <a id="14327" href="plfa.Lists.html#14295" class="Bound">ys</a>
+  <a id="14332" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="14340" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#13645" class="Function">shunt</a> <a id="14346" href="plfa.Lists.html#14291" class="Bound">xs</a> <a id="14349" class="Symbol">(</a><a id="14350" href="plfa.Lists.html#14287" class="Bound">x</a> <a id="14352" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="14354" href="plfa.Lists.html#14295" class="Bound">ys</a><a id="14356" class="Symbol">)</a>
+  <a id="14360" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">≡⟨</a> <a id="14363" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#14102" class="Function">shunt-reverse</a> <a id="14377" href="plfa.Lists.html#14291" class="Bound">xs</a> <a id="14380" class="Symbol">(</a><a id="14381" href="plfa.Lists.html#14287" class="Bound">x</a> <a id="14383" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="14385" href="plfa.Lists.html#14295" class="Bound">ys</a><a id="14387" class="Symbol">)</a> <a id="14389" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">⟩</a>
+    <a id="14395" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="14403" href="plfa.Lists.html#14291" class="Bound">xs</a> <a id="14406" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="14409" class="Symbol">(</a><a id="14410" href="plfa.Lists.html#14287" class="Bound">x</a> <a id="14412" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="14414" href="plfa.Lists.html#14295" class="Bound">ys</a><a id="14416" class="Symbol">)</a>
+  <a id="14420" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="14428" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="14436" href="plfa.Lists.html#14291" class="Bound">xs</a> <a id="14439" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="14442" class="Symbol">(</a><a id="14443" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">[</a> <a id="14445" href="plfa.Lists.html#14287" class="Bound">x</a> <a id="14447" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">]</a> <a id="14449" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="14452" href="plfa.Lists.html#14295" class="Bound">ys</a><a id="14454" class="Symbol">)</a>
+  <a id="14458" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">≡⟨</a> <a id="14461" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#939" class="Function">sym</a> <a id="14465" class="Symbol">(</a><a id="14466" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#6032" class="Function">++-assoc</a> <a id="14475" class="Symbol">(</a><a id="14476" href="plfa.Lists.html#10927" class="Function">reverse</a> <a id="14484" href="plfa.Lists.html#14291" class="Bound">xs</a><a id="14486" class="Symbol">)</a> <a id="14488" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">[</a> <a id="14490" href="plfa.Lists.html#14287" class="Bound">x</a> <a id="14492" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">]</a> <a id="14494" href="plfa.Lists.html#14295" class="Bound">ys</a><a id="14496" class="Symbol">)</a> <a id="14498" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">⟩</a>
+    <a id="14504" class="Symbol">(</a><a id="14505" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="14513" href="plfa.Lists.html#14291" class="Bound">xs</a> <a id="14516" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="14519" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">[</a> <a id="14521" href="plfa.Lists.html#14287" class="Bound">x</a> <a id="14523" href="plfa.Lists.html#3818" class="InductiveConstructor Operator">]</a><a id="14524" class="Symbol">)</a> <a id="14526" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="14529" href="plfa.Lists.html#14295" class="Bound">ys</a>
+  <a id="14534" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="14542" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="14550" class="Symbol">(</a><a id="14551" href="plfa.Lists.html#14287" class="Bound">x</a> <a id="14553" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="14555" href="plfa.Lists.html#14291" class="Bound">xs</a><a id="14557" class="Symbol">)</a> <a id="14559" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="14562" href="plfa.Lists.html#14295" class="Bound">ys</a>
+  <a id="14567" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+The proof is by induction on the first argument.
+The base case instantiates to `[]`, and follows by straightforward computation.
+The inductive case instantiates to `x ∷ xs` and follows by the inductive
+hypothesis and associativity of append.  When we invoke the inductive hypothesis,
+the second argument actually becomes *larger*, but this is not a problem because
+the argument on which we induct becomes *smaller*.
+{:/}
+
+证明对于第一个参数进行归纳。起始步骤将列表实例化为 `[]`，由直接的运算可证。
+归纳步骤将列表实例化为 `x ∷ xs`，由归纳假设和附加的结合律可证。
+当我们使用归纳假设时，第二个参数实际上变**大**了，但是这样做没有问题，因为我们归纳的参数变**小**了。
+
+{::comment}
+Generalising on an auxiliary argument, which becomes larger as the argument on
+which we recurse or induct becomes smaller, is a common trick. It belongs in
+your quiver of arrows, ready to slay the right problem.
+{:/}
+
+使用一个会在归纳或递归的参数变小时，变大的辅助参数来进行推广，是一个常用的技巧。
+这个技巧在以后的证明中很有用。
+
+{::comment}
+Having defined shunt be generalisation, it is now easy to respecialise to
+give a more efficient definition of reverse:
+{:/}
+
+在定义了推广的转移之后，我们可以将其特化，作为一个更高效的反转的定义：
+
+{% raw %}<pre class="Agda"><a id="reverse′"></a><a id="15608" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#15608" class="Function">reverse′</a> <a id="15617" class="Symbol">:</a> <a id="15619" class="Symbol">∀</a> <a id="15621" class="Symbol">{</a><a id="15622" href="plfa.Lists.html#15622" class="Bound">A</a> <a id="15624" class="Symbol">:</a> <a id="15626" class="PrimitiveType">Set</a><a id="15629" class="Symbol">}</a> <a id="15631" class="Symbol">→</a> <a id="15633" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="15638" href="plfa.Lists.html#15622" class="Bound">A</a> <a id="15640" class="Symbol">→</a> <a id="15642" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="15647" href="plfa.Lists.html#15622" class="Bound">A</a>
+<a id="15649" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#15608" class="Function">reverse′</a> <a id="15658" href="plfa.Lists.html#15658" class="Bound">xs</a> <a id="15661" class="Symbol">=</a> <a id="15663" href="plfa.Lists.html#13645" class="Function">shunt</a> <a id="15669" href="plfa.Lists.html#15658" class="Bound">xs</a> <a id="15672" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+</pre>{% endraw %}
+{::comment}
+Given our previous lemma, it is straightforward to show
+the two definitions equivalent:
+{:/}
+
+因为我们之前证明的引理，我们可以直接地证明两个定义是等价的：
+
+{% raw %}<pre class="Agda"><a id="reverses"></a><a id="15822" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#15822" class="Function">reverses</a> <a id="15831" class="Symbol">:</a> <a id="15833" class="Symbol">∀</a> <a id="15835" class="Symbol">{</a><a id="15836" href="plfa.Lists.html#15836" class="Bound">A</a> <a id="15838" class="Symbol">:</a> <a id="15840" class="PrimitiveType">Set</a><a id="15843" class="Symbol">}</a> <a id="15845" class="Symbol">(</a><a id="15846" href="plfa.Lists.html#15846" class="Bound">xs</a> <a id="15849" class="Symbol">:</a> <a id="15851" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="15856" href="plfa.Lists.html#15836" class="Bound">A</a><a id="15857" class="Symbol">)</a>
+  <a id="15861" class="Symbol">→</a> <a id="15863" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#15608" class="Function">reverse′</a> <a id="15872" href="plfa.Lists.html#15846" class="Bound">xs</a> <a id="15875" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="15877" href="plfa.Lists.html#10927" class="Function">reverse</a> <a id="15885" href="plfa.Lists.html#15846" class="Bound">xs</a>
+<a id="15888" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#15822" class="Function">reverses</a> <a id="15897" href="plfa.Lists.html#15897" class="Bound">xs</a> <a id="15900" class="Symbol">=</a>
+  <a id="15904" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="15914" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#15608" class="Function">reverse′</a> <a id="15923" href="plfa.Lists.html#15897" class="Bound">xs</a>
+  <a id="15928" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="15936" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#13645" class="Function">shunt</a> <a id="15942" href="plfa.Lists.html#15897" class="Bound">xs</a> <a id="15945" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="15950" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">≡⟨</a> <a id="15953" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#14102" class="Function">shunt-reverse</a> <a id="15967" href="plfa.Lists.html#15897" class="Bound">xs</a> <a id="15970" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="15973" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">⟩</a>
+    <a id="15979" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="15987" href="plfa.Lists.html#15897" class="Bound">xs</a> <a id="15990" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="15993" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="15998" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">≡⟨</a> <a id="16001" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#7792" class="Function">++-identityʳ</a> <a id="16014" class="Symbol">(</a><a id="16015" href="plfa.Lists.html#10927" class="Function">reverse</a> <a id="16023" href="plfa.Lists.html#15897" class="Bound">xs</a><a id="16025" class="Symbol">)</a> <a id="16027" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">⟩</a>
+    <a id="16033" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#10927" class="Function">reverse</a> <a id="16041" href="plfa.Lists.html#15897" class="Bound">xs</a>
+  <a id="16046" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+Here is an example showing fast reverse of the list `[ 0 , 1 , 2 ]`:
+{:/}
+
+下面的例子展示了如何快速反转列表 `[ 0 , 1 , 2 ]`：
+
+{% raw %}<pre class="Agda"><a id="16179" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#16179" class="Function">_</a> <a id="16181" class="Symbol">:</a> <a id="16183" href="plfa.Lists.html#15608" class="Function">reverse′</a> <a id="16192" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">[</a> <a id="16194" class="Number">0</a> <a id="16196" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="16198" class="Number">1</a> <a id="16200" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="16202" class="Number">2</a> <a id="16204" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a> <a id="16206" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="16208" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">[</a> <a id="16210" class="Number">2</a> <a id="16212" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="16214" class="Number">1</a> <a id="16216" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="16218" class="Number">0</a> <a id="16220" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a>
+<a id="16222" class="Symbol">_</a> <a id="16224" class="Symbol">=</a>
+  <a id="16228" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="16238" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#15608" class="Function">reverse′</a> <a id="16247" class="Symbol">(</a><a id="16248" class="Number">0</a> <a id="16250" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16252" class="Number">1</a> <a id="16254" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16256" class="Number">2</a> <a id="16258" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16260" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="16262" class="Symbol">)</a>
+  <a id="16266" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="16274" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#13645" class="Function">shunt</a> <a id="16280" class="Symbol">(</a><a id="16281" class="Number">0</a> <a id="16283" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16285" class="Number">1</a> <a id="16287" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16289" class="Number">2</a> <a id="16291" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16293" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="16295" class="Symbol">)</a> <a id="16297" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="16302" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="16310" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#13645" class="Function">shunt</a> <a id="16316" class="Symbol">(</a><a id="16317" class="Number">1</a> <a id="16319" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16321" class="Number">2</a> <a id="16323" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16325" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="16327" class="Symbol">)</a> <a id="16329" class="Symbol">(</a><a id="16330" class="Number">0</a> <a id="16332" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16334" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="16336" class="Symbol">)</a>
+  <a id="16340" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="16348" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#13645" class="Function">shunt</a> <a id="16354" class="Symbol">(</a><a id="16355" class="Number">2</a> <a id="16357" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16359" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="16361" class="Symbol">)</a> <a id="16363" class="Symbol">(</a><a id="16364" class="Number">1</a> <a id="16366" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16368" class="Number">0</a> <a id="16370" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16372" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="16374" class="Symbol">)</a>
+  <a id="16378" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="16386" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#13645" class="Function">shunt</a> <a id="16392" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="16395" class="Symbol">(</a><a id="16396" class="Number">2</a> <a id="16398" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16400" class="Number">1</a> <a id="16402" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16404" class="Number">0</a> <a id="16406" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16408" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="16410" class="Symbol">)</a>
+  <a id="16414" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="16422" class="Number">2</a> <a id="16424" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="16426" class="Number">1</a> <a id="16428" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16430" class="Number">0</a> <a id="16432" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="16434" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="16439" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+Now the time to reverse a list is linear in the length of the list.
+{:/}
+
+现在反转一个列表需要的时间与列表的长度线性相关。
+
+{::comment}
+## Map {#Map}
+{:/}
+
+## 映射 {#Map}
+
+{::comment}
+Map applies a function to every element of a list to generate a corresponding list.
+Map is an example of a _higher-order function_, one which takes a function as an
+argument or returns a function as a result:
+{:/}
+
+映射将一个函数应用于列表中的所有元素，生成一个对应的列表。
+映射是一个**高阶函数**（Higher-Order Function）的例子，它取一个函数作为参数，返回一个函数作为结果：
+
+{% raw %}<pre class="Agda"><a id="map"></a><a id="16929" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#16929" class="Function">map</a> <a id="16933" class="Symbol">:</a> <a id="16935" class="Symbol">∀</a> <a id="16937" class="Symbol">{</a><a id="16938" href="plfa.Lists.html#16938" class="Bound">A</a> <a id="16940" href="plfa.Lists.html#16940" class="Bound">B</a> <a id="16942" class="Symbol">:</a> <a id="16944" class="PrimitiveType">Set</a><a id="16947" class="Symbol">}</a> <a id="16949" class="Symbol">→</a> <a id="16951" class="Symbol">(</a><a id="16952" href="plfa.Lists.html#16938" class="Bound">A</a> <a id="16954" class="Symbol">→</a> <a id="16956" href="plfa.Lists.html#16940" class="Bound">B</a><a id="16957" class="Symbol">)</a> <a id="16959" class="Symbol">→</a> <a id="16961" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="16966" href="plfa.Lists.html#16938" class="Bound">A</a> <a id="16968" class="Symbol">→</a> <a id="16970" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="16975" href="plfa.Lists.html#16940" class="Bound">B</a>
+<a id="16977" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#16929" class="Function">map</a> <a id="16981" href="plfa.Lists.html#16981" class="Bound">f</a> <a id="16983" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>        <a id="16993" class="Symbol">=</a>  <a id="16996" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+<a id="16999" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#16929" class="Function">map</a> <a id="17003" href="plfa.Lists.html#17003" class="Bound">f</a> <a id="17005" class="Symbol">(</a><a id="17006" href="plfa.Lists.html#17006" class="Bound">x</a> <a id="17008" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17010" href="plfa.Lists.html#17010" class="Bound">xs</a><a id="17012" class="Symbol">)</a>  <a id="17015" class="Symbol">=</a>  <a id="17018" href="plfa.Lists.html#17003" class="Bound">f</a> <a id="17020" href="plfa.Lists.html#17006" class="Bound">x</a> <a id="17022" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17024" href="plfa.Lists.html#16929" class="Function">map</a> <a id="17028" href="plfa.Lists.html#17003" class="Bound">f</a> <a id="17030" href="plfa.Lists.html#17010" class="Bound">xs</a>
+</pre>{% endraw %}
+{::comment}
+Map of the empty list is the empty list.
+Map of a non-empty list yields a list
+with head the same as the function applied to the head of the given list,
+and tail the same as map of the function applied to the tail of the given list.
+{:/}
+
+空列表的映射是空列表。
+非空列表的映射生成一个列表，其头元素是原列表的头元素在应用函数之后的结果，
+其尾列表是原列表的尾列表映射后的结果。
+
+{::comment}
+Here is an example showing how to use map to increment every element of a list:
+{:/}
+
+下面的例子展示了如何使用映射来增加列表中的每一个元素：
+
+{% raw %}<pre class="Agda"><a id="17491" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#17491" class="Function">_</a> <a id="17493" class="Symbol">:</a> <a id="17495" href="plfa.Lists.html#16929" class="Function">map</a> <a id="17499" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="17503" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">[</a> <a id="17505" class="Number">0</a> <a id="17507" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="17509" class="Number">1</a> <a id="17511" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="17513" class="Number">2</a> <a id="17515" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a> <a id="17517" href="Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="17519" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">[</a> <a id="17521" class="Number">1</a> <a id="17523" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="17525" class="Number">2</a> <a id="17527" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="17529" class="Number">3</a> <a id="17531" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a>
+<a id="17533" class="Symbol">_</a> <a id="17535" class="Symbol">=</a>
+  <a id="17539" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="17549" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#16929" class="Function">map</a> <a id="17553" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="17557" class="Symbol">(</a><a id="17558" class="Number">0</a> <a id="17560" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17562" class="Number">1</a> <a id="17564" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17566" class="Number">2</a> <a id="17568" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17570" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="17572" class="Symbol">)</a>
+  <a id="17576" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="17584" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="17588" class="Number">0</a> <a id="17590" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="17592" href="plfa.Lists.html#16929" class="Function">map</a> <a id="17596" href="Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="17600" class="Symbol">(</a><a id="17601" class="Number">1</a> <a id="17603" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17605" class="Number">2</a> <a id="17607" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17609" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="17611" class="Symbol">)</a>
+  <a id="17615" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="17623" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="17627" class="Number">0</a> <a id="17629" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="17631" href="Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="17635" class="Number">1</a> <a id="17637" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17639" href="plfa.Lists.html#16929" class="Function">map</a> <a id="17643" href="Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="17647" class="Symbol">(</a><a id="17648" class="Number">2</a> <a id="17650" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17652" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="17654" class="Symbol">)</a>
+  <a id="17658" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="17666" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="17670" class="Number">0</a> <a id="17672" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="17674" href="Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="17678" class="Number">1</a> <a id="17680" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17682" href="Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="17686" class="Number">2</a> <a id="17688" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17690" href="plfa.Lists.html#16929" class="Function">map</a> <a id="17694" href="Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="17698" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="17703" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="17711" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="17715" class="Number">0</a> <a id="17717" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="17719" href="Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="17723" class="Number">1</a> <a id="17725" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17727" href="Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="17731" class="Number">2</a> <a id="17733" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17735" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="17740" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="17748" class="Number">1</a> <a id="17750" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#1328" class="InductiveConstructor Operator">∷</a> <a id="17752" class="Number">2</a> <a id="17754" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17756" class="Number">3</a> <a id="17758" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="17760" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="17765" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+Map requires time linear in the length of the list.
+{:/}
+
+映射需要关于列表长度线性的时间。
+
+{::comment}
+It is often convenient to exploit currying by applying
+map to a function to yield a new function, and at a later
+point applying the resulting function:
+{:/}
+
+我们常常可以利用柯里化，将映射作用于一个函数，获得另一个函数，然后在之后的时候应用获得的函数：
+
+{% raw %}<pre class="Agda"><a id="sucs"></a><a id="18083" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#18083" class="Function">sucs</a> <a id="18088" class="Symbol">:</a> <a id="18090" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="18095" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a> <a id="18097" class="Symbol">→</a> <a id="18099" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="18104" href="Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a>
+<a id="18106" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#18083" class="Function">sucs</a> <a id="18111" class="Symbol">=</a> <a id="18113" href="plfa.Lists.html#16929" class="Function">map</a> <a id="18117" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a>
+
+<a id="18122" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#18122" class="Function">_</a> <a id="18124" class="Symbol">:</a> <a id="18126" href="plfa.Lists.html#18083" class="Function">sucs</a> <a id="18131" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">[</a> <a id="18133" class="Number">0</a> <a id="18135" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="18137" class="Number">1</a> <a id="18139" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="18141" class="Number">2</a> <a id="18143" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a> <a id="18145" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="18147" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">[</a> <a id="18149" class="Number">1</a> <a id="18151" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="18153" class="Number">2</a> <a id="18155" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="18157" class="Number">3</a> <a id="18159" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a>
+<a id="18161" class="Symbol">_</a> <a id="18163" class="Symbol">=</a>
+  <a id="18167" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="18177" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#18083" class="Function">sucs</a> <a id="18182" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">[</a> <a id="18184" class="Number">0</a> <a id="18186" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="18188" class="Number">1</a> <a id="18190" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="18192" class="Number">2</a> <a id="18194" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a>
+  <a id="18198" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="18206" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#16929" class="Function">map</a> <a id="18210" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="18214" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">[</a> <a id="18216" class="Number">0</a> <a id="18218" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="18220" class="Number">1</a> <a id="18222" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="18224" class="Number">2</a> <a id="18226" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a>
+  <a id="18230" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="18238" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#3872" class="InductiveConstructor Operator">[</a> <a id="18240" class="Number">1</a> <a id="18242" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="18244" class="Number">2</a> <a id="18246" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="18248" class="Number">3</a> <a id="18250" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a>
+  <a id="18254" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+Any type that is parameterised on another type, such as lists, has a
+corresponding map, which accepts a function and returns a function
+from the type parameterised on the domain of the function to the type
+parameterised on the range of the function. Further, a type that is
+parameterised on _n_ types will have a map that is parameterised on
+_n_ functions.
+{:/}
+
+任何对于另外一个类型参数化的类型，例如列表，都有对应的映射，其接受一个函数，并返回另一个
+从由给定函数定义域参数化的类型，到由给定函数值域参数化的函数。除此之外，一个对于 _n_ 个类型
+参数化的类型会有一个对于 _n_ 个函数参数化的映射。
+
+{::comment}
+#### Exercise `map-compose`
+{:/}
+
+#### 练习 `map-compose`
+
+{::comment}
+Prove that the map of a composition is equal to the composition of two maps:
+{:/}
+
+证明函数组合的映射是两个映射的组合：
+
+{% raw %}<pre class="Agda"><a id="18947" class="Keyword">postulate</a>
+  <a id="map-compose"></a><a id="18959" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#18959" class="Postulate">map-compose</a> <a id="18971" class="Symbol">:</a> <a id="18973" class="Symbol">∀</a> <a id="18975" class="Symbol">{</a><a id="18976" href="plfa.Lists.html#18976" class="Bound">A</a> <a id="18978" href="plfa.Lists.html#18978" class="Bound">B</a> <a id="18980" href="plfa.Lists.html#18980" class="Bound">C</a> <a id="18982" class="Symbol">:</a> <a id="18984" class="PrimitiveType">Set</a><a id="18987" class="Symbol">}</a> <a id="18989" class="Symbol">{</a><a id="18990" href="plfa.Lists.html#18990" class="Bound">f</a> <a id="18992" class="Symbol">:</a> <a id="18994" href="plfa.Lists.html#18976" class="Bound">A</a> <a id="18996" class="Symbol">→</a> <a id="18998" href="plfa.Lists.html#18978" class="Bound">B</a><a id="18999" class="Symbol">}</a> <a id="19001" class="Symbol">{</a><a id="19002" href="plfa.Lists.html#19002" class="Bound">g</a> <a id="19004" class="Symbol">:</a> <a id="19006" href="plfa.Lists.html#18978" class="Bound">B</a> <a id="19008" class="Symbol">→</a> <a id="19010" href="plfa.Lists.html#18980" class="Bound">C</a><a id="19011" class="Symbol">}</a>
+    <a id="19017" class="Symbol">→</a> <a id="19019" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#16929" class="Function">map</a> <a id="19023" class="Symbol">(</a><a id="19024" href="plfa.Lists.html#19002" class="Bound">g</a> <a id="19026" href="https://agda.github.io/agda-stdlib/v1.1/Function.html#1099" class="Function Operator">∘</a> <a id="19028" href="plfa.Lists.html#18990" class="Bound">f</a><a id="19029" class="Symbol">)</a> <a id="19031" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="19033" href="plfa.Lists.html#16929" class="Function">map</a> <a id="19037" href="plfa.Lists.html#19002" class="Bound">g</a> <a id="19039" href="https://agda.github.io/agda-stdlib/v1.1/Function.html#1099" class="Function Operator">∘</a> <a id="19041" href="plfa.Lists.html#16929" class="Function">map</a> <a id="19045" href="plfa.Lists.html#18990" class="Bound">f</a>
+</pre>{% endraw %}
+{::comment}
+The last step of the proof requires extensionality.
+{:/}
+
+证明的最后一步需要外延性。
+
+{::comment}
+#### Exercise `map-++-commute`
+{:/}
+
+#### 练习 `map-++-commute`
+
+{::comment}
+Prove the following relationship between map and append:
+{:/}
+
+证明下列关于映射与附加的关系：
+
+{% raw %}<pre class="Agda"><a id="19308" class="Keyword">postulate</a>
+  <a id="map-++-commute"></a><a id="19320" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#19320" class="Postulate">map-++-commute</a> <a id="19335" class="Symbol">:</a> <a id="19337" class="Symbol">∀</a> <a id="19339" class="Symbol">{</a><a id="19340" href="plfa.Lists.html#19340" class="Bound">A</a> <a id="19342" href="plfa.Lists.html#19342" class="Bound">B</a> <a id="19344" class="Symbol">:</a> <a id="19346" class="PrimitiveType">Set</a><a id="19349" class="Symbol">}</a> <a id="19351" class="Symbol">{</a><a id="19352" href="plfa.Lists.html#19352" class="Bound">f</a> <a id="19354" class="Symbol">:</a> <a id="19356" href="plfa.Lists.html#19340" class="Bound">A</a> <a id="19358" class="Symbol">→</a> <a id="19360" href="plfa.Lists.html#19342" class="Bound">B</a><a id="19361" class="Symbol">}</a> <a id="19363" class="Symbol">{</a><a id="19364" href="plfa.Lists.html#19364" class="Bound">xs</a> <a id="19367" href="plfa.Lists.html#19367" class="Bound">ys</a> <a id="19370" class="Symbol">:</a> <a id="19372" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="19377" href="plfa.Lists.html#19340" class="Bound">A</a><a id="19378" class="Symbol">}</a>
+   <a id="19383" class="Symbol">→</a>  <a id="19386" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#16929" class="Function">map</a> <a id="19390" href="plfa.Lists.html#19352" class="Bound">f</a> <a id="19392" class="Symbol">(</a><a id="19393" href="plfa.Lists.html#19364" class="Bound">xs</a> <a id="19396" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="19399" href="plfa.Lists.html#19367" class="Bound">ys</a><a id="19401" class="Symbol">)</a> <a id="19403" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="19405" href="plfa.Lists.html#16929" class="Function">map</a> <a id="19409" href="plfa.Lists.html#19352" class="Bound">f</a> <a id="19411" href="plfa.Lists.html#19364" class="Bound">xs</a> <a id="19414" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="19417" href="plfa.Lists.html#16929" class="Function">map</a> <a id="19421" href="plfa.Lists.html#19352" class="Bound">f</a> <a id="19423" href="plfa.Lists.html#19367" class="Bound">ys</a>
+</pre>{% endraw %}
+{::comment}
+#### Exercise `map-Tree`
+{:/}
+
+#### 练习 `map-Tree`
+
+{::comment}
+Define a type of trees with leaves of type `A` and internal
+nodes of type `B`:
+{:/}
+
+定义一个树数据类型，其叶节点类型为 `A`，内部节点类型为 `B`：
+
+{% raw %}<pre class="Agda"><a id="19631" class="Keyword">data</a> <a id="Tree"></a><a id="19636" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#19636" class="Datatype">Tree</a> <a id="19641" class="Symbol">(</a><a id="19642" href="plfa.Lists.html#19642" class="Bound">A</a> <a id="19644" href="plfa.Lists.html#19644" class="Bound">B</a> <a id="19646" class="Symbol">:</a> <a id="19648" class="PrimitiveType">Set</a><a id="19651" class="Symbol">)</a> <a id="19653" class="Symbol">:</a> <a id="19655" class="PrimitiveType">Set</a> <a id="19659" class="Keyword">where</a>
+  <a id="Tree.leaf"></a><a id="19667" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#19667" class="InductiveConstructor">leaf</a> <a id="19672" class="Symbol">:</a> <a id="19674" href="plfa.Lists.html#19642" class="Bound">A</a> <a id="19676" class="Symbol">→</a> <a id="19678" href="plfa.Lists.html#19636" class="Datatype">Tree</a> <a id="19683" href="plfa.Lists.html#19642" class="Bound">A</a> <a id="19685" href="plfa.Lists.html#19644" class="Bound">B</a>
+  <a id="Tree.node"></a><a id="19689" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#19689" class="InductiveConstructor">node</a> <a id="19694" class="Symbol">:</a> <a id="19696" href="plfa.Lists.html#19636" class="Datatype">Tree</a> <a id="19701" href="plfa.Lists.html#19642" class="Bound">A</a> <a id="19703" href="plfa.Lists.html#19644" class="Bound">B</a> <a id="19705" class="Symbol">→</a> <a id="19707" href="plfa.Lists.html#19644" class="Bound">B</a> <a id="19709" class="Symbol">→</a> <a id="19711" href="plfa.Lists.html#19636" class="Datatype">Tree</a> <a id="19716" href="plfa.Lists.html#19642" class="Bound">A</a> <a id="19718" href="plfa.Lists.html#19644" class="Bound">B</a> <a id="19720" class="Symbol">→</a> <a id="19722" href="plfa.Lists.html#19636" class="Datatype">Tree</a> <a id="19727" href="plfa.Lists.html#19642" class="Bound">A</a> <a id="19729" href="plfa.Lists.html#19644" class="Bound">B</a>
+</pre>{% endraw %}
+{::comment}
+Define a suitable map operator over trees:
+{:/}
+
+定义一个对于树的映射运算符：
+
+{% raw %}<pre class="Agda"><a id="19817" class="Keyword">postulate</a>
+  <a id="map-Tree"></a><a id="19829" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#19829" class="Postulate">map-Tree</a> <a id="19838" class="Symbol">:</a> <a id="19840" class="Symbol">∀</a> <a id="19842" class="Symbol">{</a><a id="19843" href="plfa.Lists.html#19843" class="Bound">A</a> <a id="19845" href="plfa.Lists.html#19845" class="Bound">B</a> <a id="19847" href="plfa.Lists.html#19847" class="Bound">C</a> <a id="19849" href="plfa.Lists.html#19849" class="Bound">D</a> <a id="19851" class="Symbol">:</a> <a id="19853" class="PrimitiveType">Set</a><a id="19856" class="Symbol">}</a>
+    <a id="19862" class="Symbol">→</a> <a id="19864" class="Symbol">(</a><a id="19865" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#19843" class="Bound">A</a> <a id="19867" class="Symbol">→</a> <a id="19869" href="plfa.Lists.html#19847" class="Bound">C</a><a id="19870" class="Symbol">)</a> <a id="19872" class="Symbol">→</a> <a id="19874" class="Symbol">(</a><a id="19875" href="plfa.Lists.html#19845" class="Bound">B</a> <a id="19877" class="Symbol">→</a> <a id="19879" href="plfa.Lists.html#19849" class="Bound">D</a><a id="19880" class="Symbol">)</a> <a id="19882" class="Symbol">→</a> <a id="19884" href="plfa.Lists.html#19636" class="Datatype">Tree</a> <a id="19889" href="plfa.Lists.html#19843" class="Bound">A</a> <a id="19891" href="plfa.Lists.html#19845" class="Bound">B</a> <a id="19893" class="Symbol">→</a> <a id="19895" href="plfa.Lists.html#19636" class="Datatype">Tree</a> <a id="19900" href="plfa.Lists.html#19847" class="Bound">C</a> <a id="19902" href="plfa.Lists.html#19849" class="Bound">D</a>
+</pre>{% endraw %}
+
+{::comment}
+## Fold {#Fold}
+{:/}
+
+## 折叠 {#Fold}
+
+{::comment}
+Fold takes an operator and a value, and uses the operator to combine
+each of the elements of the list, taking the given value as the result
+for the empty list:
+{:/}
+
+折叠取一个运算符和一个值，并使用运算符将列表中的元素合并至一个值，如果给定的列表为空，
+则使用给定的值：
+
+{% raw %}<pre class="Agda"><a id="foldr"></a><a id="20195" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="20201" class="Symbol">:</a> <a id="20203" class="Symbol">∀</a> <a id="20205" class="Symbol">{</a><a id="20206" href="plfa.Lists.html#20206" class="Bound">A</a> <a id="20208" href="plfa.Lists.html#20208" class="Bound">B</a> <a id="20210" class="Symbol">:</a> <a id="20212" class="PrimitiveType">Set</a><a id="20215" class="Symbol">}</a> <a id="20217" class="Symbol">→</a> <a id="20219" class="Symbol">(</a><a id="20220" href="plfa.Lists.html#20206" class="Bound">A</a> <a id="20222" class="Symbol">→</a> <a id="20224" href="plfa.Lists.html#20208" class="Bound">B</a> <a id="20226" class="Symbol">→</a> <a id="20228" href="plfa.Lists.html#20208" class="Bound">B</a><a id="20229" class="Symbol">)</a> <a id="20231" class="Symbol">→</a> <a id="20233" href="plfa.Lists.html#20208" class="Bound">B</a> <a id="20235" class="Symbol">→</a> <a id="20237" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="20242" href="plfa.Lists.html#20206" class="Bound">A</a> <a id="20244" class="Symbol">→</a> <a id="20246" href="plfa.Lists.html#20208" class="Bound">B</a>
+<a id="20248" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="20254" href="plfa.Lists.html#20254" class="Bound Operator">_⊗_</a> <a id="20258" href="plfa.Lists.html#20258" class="Bound">e</a> <a id="20260" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>        <a id="20270" class="Symbol">=</a>  <a id="20273" href="plfa.Lists.html#20258" class="Bound">e</a>
+<a id="20275" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="20281" href="plfa.Lists.html#20281" class="Bound Operator">_⊗_</a> <a id="20285" href="plfa.Lists.html#20285" class="Bound">e</a> <a id="20287" class="Symbol">(</a><a id="20288" href="plfa.Lists.html#20288" class="Bound">x</a> <a id="20290" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="20292" href="plfa.Lists.html#20292" class="Bound">xs</a><a id="20294" class="Symbol">)</a>  <a id="20297" class="Symbol">=</a>  <a id="20300" href="plfa.Lists.html#20288" class="Bound">x</a> <a id="20302" href="plfa.Lists.html#20281" class="Bound Operator">⊗</a> <a id="20304" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="20310" href="plfa.Lists.html#20281" class="Bound Operator">_⊗_</a> <a id="20314" href="plfa.Lists.html#20285" class="Bound">e</a> <a id="20316" href="plfa.Lists.html#20292" class="Bound">xs</a>
+</pre>{% endraw %}
+{::comment}
+Fold of the empty list is the given value.
+Fold of a non-empty list uses the operator to combine
+the head of the list and the fold of the tail of the list.
+{:/}
+
+空列表的折叠是给定的值。
+非空列表的折叠使用给定的运算符，将头元素和尾列表的折叠合并起来。
+
+{::comment}
+Here is an example showing how to use fold to find the sum of a list:
+{:/}
+
+下面的例子展示了如何使用折叠来对一个列表求和：
+
+{% raw %}<pre class="Agda"><a id="20662" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20662" class="Function">_</a> <a id="20664" class="Symbol">:</a> <a id="20666" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="20672" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#298" class="Primitive Operator">_+_</a> <a id="20676" class="Number">0</a> <a id="20678" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">[</a> <a id="20680" class="Number">1</a> <a id="20682" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="20684" class="Number">2</a> <a id="20686" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="20688" class="Number">3</a> <a id="20690" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="20692" class="Number">4</a> <a id="20694" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">]</a> <a id="20696" href="Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="20698" class="Number">10</a>
+<a id="20701" class="Symbol">_</a> <a id="20703" class="Symbol">=</a>
+  <a id="20707" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="20717" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="20723" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#298" class="Primitive Operator">_+_</a> <a id="20727" class="Number">0</a> <a id="20729" class="Symbol">(</a><a id="20730" class="Number">1</a> <a id="20732" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="20734" class="Number">2</a> <a id="20736" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="20738" class="Number">3</a> <a id="20740" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="20742" class="Number">4</a> <a id="20744" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="20746" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="20748" class="Symbol">)</a>
+  <a id="20752" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="20760" class="Number">1</a> <a id="20762" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="20764" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="20770" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">_+_</a> <a id="20774" class="Number">0</a> <a id="20776" class="Symbol">(</a><a id="20777" class="Number">2</a> <a id="20779" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="20781" class="Number">3</a> <a id="20783" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="20785" class="Number">4</a> <a id="20787" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="20789" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="20791" class="Symbol">)</a>
+  <a id="20795" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="20803" class="Number">1</a> <a id="20805" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="20807" class="Symbol">(</a><a id="20808" class="Number">2</a> <a id="20810" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="20812" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="20818" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">_+_</a> <a id="20822" class="Number">0</a> <a id="20824" class="Symbol">(</a><a id="20825" class="Number">3</a> <a id="20827" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="20829" class="Number">4</a> <a id="20831" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="20833" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="20835" class="Symbol">))</a>
+  <a id="20840" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="20848" class="Number">1</a> <a id="20850" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="20852" class="Symbol">(</a><a id="20853" class="Number">2</a> <a id="20855" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="20857" class="Symbol">(</a><a id="20858" class="Number">3</a> <a id="20860" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="20862" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="20868" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">_+_</a> <a id="20872" class="Number">0</a> <a id="20874" class="Symbol">(</a><a id="20875" class="Number">4</a> <a id="20877" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="20879" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="20881" class="Symbol">)))</a>
+  <a id="20887" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="20895" class="Number">1</a> <a id="20897" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="20899" class="Symbol">(</a><a id="20900" class="Number">2</a> <a id="20902" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="20904" class="Symbol">(</a><a id="20905" class="Number">3</a> <a id="20907" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="20909" class="Symbol">(</a><a id="20910" class="Number">4</a> <a id="20912" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="20914" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="20920" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">_+_</a> <a id="20924" class="Number">0</a> <a id="20926" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a><a id="20928" class="Symbol">)))</a>
+  <a id="20934" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="20942" class="Number">1</a> <a id="20944" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="20946" class="Symbol">(</a><a id="20947" class="Number">2</a> <a id="20949" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="20951" class="Symbol">(</a><a id="20952" class="Number">3</a> <a id="20954" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="20956" class="Symbol">(</a><a id="20957" class="Number">4</a> <a id="20959" href="Agda.Builtin.Nat.html#298" class="Primitive Operator">+</a> <a id="20961" class="Number">0</a><a id="20962" class="Symbol">)))</a>
+  <a id="20968" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+Fold requires time linear in the length of the list.
+{:/}
+
+折叠需要关于列表长度线性的时间。
+
+{::comment}
+It is often convenient to exploit currying by applying
+fold to an operator and a value to yield a new function,
+and at a later point applying the resulting function:
+{:/}
+
+我们常常可以利用柯里化，将折叠作用于一个运算符和一个值，获得另一个函数，
+然后在之后的时候应用获得的函数：
+
+{% raw %}<pre class="Agda"><a id="sum"></a><a id="21307" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#21307" class="Function">sum</a> <a id="21311" class="Symbol">:</a> <a id="21313" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="21318" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a> <a id="21320" class="Symbol">→</a> <a id="21322" href="Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a>
+<a id="21324" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#21307" class="Function">sum</a> <a id="21328" class="Symbol">=</a> <a id="21330" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="21336" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#298" class="Primitive Operator">_+_</a> <a id="21340" class="Number">0</a>
+
+<a id="21343" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#21343" class="Function">_</a> <a id="21345" class="Symbol">:</a> <a id="21347" href="plfa.Lists.html#21307" class="Function">sum</a> <a id="21351" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">[</a> <a id="21353" class="Number">1</a> <a id="21355" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="21357" class="Number">2</a> <a id="21359" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="21361" class="Number">3</a> <a id="21363" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="21365" class="Number">4</a> <a id="21367" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">]</a> <a id="21369" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="21371" class="Number">10</a>
+<a id="21374" class="Symbol">_</a> <a id="21376" class="Symbol">=</a>
+  <a id="21380" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="21390" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#21307" class="Function">sum</a> <a id="21394" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">[</a> <a id="21396" class="Number">1</a> <a id="21398" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="21400" class="Number">2</a> <a id="21402" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="21404" class="Number">3</a> <a id="21406" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="21408" class="Number">4</a> <a id="21410" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">]</a>
+  <a id="21414" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="21422" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="21428" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#298" class="Primitive Operator">_+_</a> <a id="21432" class="Number">0</a> <a id="21434" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">[</a> <a id="21436" class="Number">1</a> <a id="21438" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="21440" class="Number">2</a> <a id="21442" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="21444" class="Number">3</a> <a id="21446" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="21448" class="Number">4</a> <a id="21450" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">]</a>
+  <a id="21454" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="21462" class="Number">10</a>
+  <a id="21467" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+Just as the list type has two constructors, `[]` and `_∷_`,
+so the fold function takes two arguments, `e` and `_⊗_`
+(in addition to the list argument).
+In general, a data type with _n_ constructors will have
+a corresponding fold function that takes _n_ arguments.
+{:/}
+
+正如列表由两个构造器 `[]` 和 `_∷_`，折叠函数取两个参数 `e` 和 `_⊗_`
+（除去列表参数）。推广来说，一个有 _n_ 个构造器的数据类型，会有对应的
+取 _n_ 个参数的折叠函数。
+
+{::comment}
+#### Exercise `product` (recommended)
+{:/}
+
+#### 练习 `product` （推荐）
+
+{::comment}
+Use fold to define a function to find the product of a list of numbers.
+For example:
+{:/}
+
+使用折叠来定义一个计算列表数字之积的函数。例如：
+
+    product [ 1 , 2 , 3 , 4 ] ≡ 24
+
+{::comment}
+{% raw %}<pre class="Agda"><a id="22118" class="Comment">-- Your code goes here</a>
+</pre>{% endraw %}{:/}
+
+{% raw %}<pre class="Agda"><a id="22155" class="Comment">-- 请将代码写在此处。</a>
+</pre>{% endraw %}
+{::comment}
+#### Exercise `foldr-++` (recommended)
+{:/}
+
+#### 练习 `foldr-++` （推荐）
+
+{::comment}
+Show that fold and append are related as follows:
+{:/}
+
+证明折叠和附加有如下的关系：
+
+{% raw %}<pre class="Agda"><a id="22343" class="Keyword">postulate</a>
+  <a id="foldr-++"></a><a id="22355" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#22355" class="Postulate">foldr-++</a> <a id="22364" class="Symbol">:</a> <a id="22366" class="Symbol">∀</a> <a id="22368" class="Symbol">{</a><a id="22369" href="plfa.Lists.html#22369" class="Bound">A</a> <a id="22371" href="plfa.Lists.html#22371" class="Bound">B</a> <a id="22373" class="Symbol">:</a> <a id="22375" class="PrimitiveType">Set</a><a id="22378" class="Symbol">}</a> <a id="22380" class="Symbol">(</a><a id="22381" href="plfa.Lists.html#22381" class="Bound Operator">_⊗_</a> <a id="22385" class="Symbol">:</a> <a id="22387" href="plfa.Lists.html#22369" class="Bound">A</a> <a id="22389" class="Symbol">→</a> <a id="22391" href="plfa.Lists.html#22371" class="Bound">B</a> <a id="22393" class="Symbol">→</a> <a id="22395" href="plfa.Lists.html#22371" class="Bound">B</a><a id="22396" class="Symbol">)</a> <a id="22398" class="Symbol">(</a><a id="22399" href="plfa.Lists.html#22399" class="Bound">e</a> <a id="22401" class="Symbol">:</a> <a id="22403" href="plfa.Lists.html#22371" class="Bound">B</a><a id="22404" class="Symbol">)</a> <a id="22406" class="Symbol">(</a><a id="22407" href="plfa.Lists.html#22407" class="Bound">xs</a> <a id="22410" href="plfa.Lists.html#22410" class="Bound">ys</a> <a id="22413" class="Symbol">:</a> <a id="22415" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="22420" href="plfa.Lists.html#22369" class="Bound">A</a><a id="22421" class="Symbol">)</a> <a id="22423" class="Symbol">→</a>
+    <a id="22429" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="22435" href="plfa.Lists.html#22381" class="Bound Operator">_⊗_</a> <a id="22439" href="plfa.Lists.html#22399" class="Bound">e</a> <a id="22441" class="Symbol">(</a><a id="22442" href="plfa.Lists.html#22407" class="Bound">xs</a> <a id="22445" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="22448" href="plfa.Lists.html#22410" class="Bound">ys</a><a id="22450" class="Symbol">)</a> <a id="22452" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="22454" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="22460" href="plfa.Lists.html#22381" class="Bound Operator">_⊗_</a> <a id="22464" class="Symbol">(</a><a id="22465" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="22471" href="plfa.Lists.html#22381" class="Bound Operator">_⊗_</a> <a id="22475" href="plfa.Lists.html#22399" class="Bound">e</a> <a id="22477" href="plfa.Lists.html#22410" class="Bound">ys</a><a id="22479" class="Symbol">)</a> <a id="22481" href="plfa.Lists.html#22407" class="Bound">xs</a>
+</pre>{% endraw %}
+
+{::comment}
+#### Exercise `map-is-foldr`
+{:/}
+
+#### 练习 `map-is-foldr`
+
+{::comment}
+Show that map can be defined using fold:
+{:/}
+
+证明映射可以用折叠定义：
+
+{% raw %}<pre class="Agda"><a id="22638" class="Keyword">postulate</a>
+  <a id="map-is-foldr"></a><a id="22650" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#22650" class="Postulate">map-is-foldr</a> <a id="22663" class="Symbol">:</a> <a id="22665" class="Symbol">∀</a> <a id="22667" class="Symbol">{</a><a id="22668" href="plfa.Lists.html#22668" class="Bound">A</a> <a id="22670" href="plfa.Lists.html#22670" class="Bound">B</a> <a id="22672" class="Symbol">:</a> <a id="22674" class="PrimitiveType">Set</a><a id="22677" class="Symbol">}</a> <a id="22679" class="Symbol">{</a><a id="22680" href="plfa.Lists.html#22680" class="Bound">f</a> <a id="22682" class="Symbol">:</a> <a id="22684" href="plfa.Lists.html#22668" class="Bound">A</a> <a id="22686" class="Symbol">→</a> <a id="22688" href="plfa.Lists.html#22670" class="Bound">B</a><a id="22689" class="Symbol">}</a> <a id="22691" class="Symbol">→</a>
+    <a id="22697" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#16929" class="Function">map</a> <a id="22701" href="plfa.Lists.html#22680" class="Bound">f</a> <a id="22703" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="22705" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="22711" class="Symbol">(λ</a> <a id="22714" href="plfa.Lists.html#22714" class="Bound">x</a> <a id="22716" href="plfa.Lists.html#22716" class="Bound">xs</a> <a id="22719" class="Symbol">→</a> <a id="22721" href="plfa.Lists.html#22680" class="Bound">f</a> <a id="22723" href="plfa.Lists.html#22714" class="Bound">x</a> <a id="22725" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="22727" href="plfa.Lists.html#22716" class="Bound">xs</a><a id="22729" class="Symbol">)</a> <a id="22731" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+</pre>{% endraw %}
+{::comment}
+This requires extensionality.
+{:/}
+
+此证明需要外延性。
+
+{::comment}
+#### Exercise `fold-Tree`
+{:/}
+
+#### 练习 `fold-Tree`
+
+{::comment}
+Define a suitable fold function for the type of trees given earlier:
+{:/}
+
+为之前给出的树数据类型定义一个折叠函数：
+
+{% raw %}<pre class="Agda"><a id="22976" class="Keyword">postulate</a>
+  <a id="fold-Tree"></a><a id="22988" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#22988" class="Postulate">fold-Tree</a> <a id="22998" class="Symbol">:</a> <a id="23000" class="Symbol">∀</a> <a id="23002" class="Symbol">{</a><a id="23003" href="plfa.Lists.html#23003" class="Bound">A</a> <a id="23005" href="plfa.Lists.html#23005" class="Bound">B</a> <a id="23007" href="plfa.Lists.html#23007" class="Bound">C</a> <a id="23009" class="Symbol">:</a> <a id="23011" class="PrimitiveType">Set</a><a id="23014" class="Symbol">}</a>
+    <a id="23020" class="Symbol">→</a> <a id="23022" class="Symbol">(</a><a id="23023" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#23003" class="Bound">A</a> <a id="23025" class="Symbol">→</a> <a id="23027" href="plfa.Lists.html#23007" class="Bound">C</a><a id="23028" class="Symbol">)</a> <a id="23030" class="Symbol">→</a> <a id="23032" class="Symbol">(</a><a id="23033" href="plfa.Lists.html#23007" class="Bound">C</a> <a id="23035" class="Symbol">→</a> <a id="23037" href="plfa.Lists.html#23005" class="Bound">B</a> <a id="23039" class="Symbol">→</a> <a id="23041" href="plfa.Lists.html#23007" class="Bound">C</a> <a id="23043" class="Symbol">→</a> <a id="23045" href="plfa.Lists.html#23007" class="Bound">C</a><a id="23046" class="Symbol">)</a> <a id="23048" class="Symbol">→</a> <a id="23050" href="plfa.Lists.html#19636" class="Datatype">Tree</a> <a id="23055" href="plfa.Lists.html#23003" class="Bound">A</a> <a id="23057" href="plfa.Lists.html#23005" class="Bound">B</a> <a id="23059" class="Symbol">→</a> <a id="23061" href="plfa.Lists.html#23007" class="Bound">C</a>
+</pre>{% endraw %}
+{::comment}
+{% raw %}<pre class="Agda"><a id="23084" class="Comment">-- Your code goes here</a>
+</pre>{% endraw %}{:/}
+
+{% raw %}<pre class="Agda"><a id="23121" class="Comment">-- 请将代码写在此处。</a>
+</pre>{% endraw %}
+{::comment}
+#### Exercise `map-is-fold-Tree`
+{:/}
+
+#### 练习 `map-is-fold-Tree`
+
+{::comment}
+Demonstrate an analogue of `map-is-foldr` for the type of trees.
+{:/}
+
+对于树数据类型，证明与 `map-is-foldr` 相似的性质。
+
+{::comment}
+{% raw %}<pre class="Agda"><a id="23352" class="Comment">-- Your code goes here</a>
+</pre>{% endraw %}{:/}
+
+{% raw %}<pre class="Agda"><a id="23389" class="Comment">-- 请将代码写在此处。</a>
+</pre>{% endraw %}
+{::comment}
+#### Exercise `sum-downFrom` (stretch)
+{:/}
+
+#### 证明 `sum-downFrom` （延伸）
+
+{::comment}
+Define a function that counts down as follows:
+{:/}
+
+定义一个向下数数的函数：
+
+{% raw %}<pre class="Agda"><a id="downFrom"></a><a id="23576" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#23576" class="Function">downFrom</a> <a id="23585" class="Symbol">:</a> <a id="23587" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a> <a id="23589" class="Symbol">→</a> <a id="23591" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="23596" href="Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a>
+<a id="23598" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#23576" class="Function">downFrom</a> <a id="23607" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#183" class="InductiveConstructor">zero</a>     <a id="23616" class="Symbol">=</a>  <a id="23619" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+<a id="23622" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#23576" class="Function">downFrom</a> <a id="23631" class="Symbol">(</a><a id="23632" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#196" class="InductiveConstructor">suc</a> <a id="23636" href="plfa.Lists.html#23636" class="Bound">n</a><a id="23637" class="Symbol">)</a>  <a id="23640" class="Symbol">=</a>  <a id="23643" href="plfa.Lists.html#23636" class="Bound">n</a> <a id="23645" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="23647" href="plfa.Lists.html#23576" class="Function">downFrom</a> <a id="23656" href="plfa.Lists.html#23636" class="Bound">n</a>
+</pre>{% endraw %}
+{::comment}
+For example:
+{:/}
+
+例如：
+
+{% raw %}<pre class="Agda"><a id="23703" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#23703" class="Function">_</a> <a id="23705" class="Symbol">:</a> <a id="23707" href="plfa.Lists.html#23576" class="Function">downFrom</a> <a id="23716" class="Number">3</a> <a id="23718" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="23720" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">[</a> <a id="23722" class="Number">2</a> <a id="23724" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="23726" class="Number">1</a> <a id="23728" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="23730" class="Number">0</a> <a id="23732" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a>
+<a id="23734" class="Symbol">_</a> <a id="23736" class="Symbol">=</a> <a id="23738" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#182" class="InductiveConstructor">refl</a>
+</pre>{% endraw %}
+{::comment}
+Prove that the sum of the numbers `(n - 1) + ⋯ + 0` is
+equal to `n * (n ∸ 1) / 2`:
+{:/}
+
+证明数列之和 `(n - 1) + ⋯ + 0` 等于 `n * (n ∸ 1) / 2`：
+
+{% raw %}<pre class="Agda"><a id="23901" class="Keyword">postulate</a>
+  <a id="sum-downFrom"></a><a id="23913" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#23913" class="Postulate">sum-downFrom</a> <a id="23926" class="Symbol">:</a> <a id="23928" class="Symbol">∀</a> <a id="23930" class="Symbol">(</a><a id="23931" href="plfa.Lists.html#23931" class="Bound">n</a> <a id="23933" class="Symbol">:</a> <a id="23935" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#165" class="Datatype">ℕ</a><a id="23936" class="Symbol">)</a>
+    <a id="23942" class="Symbol">→</a> <a id="23944" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#21307" class="Function">sum</a> <a id="23948" class="Symbol">(</a><a id="23949" href="plfa.Lists.html#23576" class="Function">downFrom</a> <a id="23958" href="plfa.Lists.html#23931" class="Bound">n</a><a id="23959" class="Symbol">)</a> <a id="23961" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#501" class="Primitive Operator">*</a> <a id="23963" class="Number">2</a> <a id="23965" href="Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="23967" href="plfa.Lists.html#23931" class="Bound">n</a> <a id="23969" href="Agda.Builtin.Nat.html#501" class="Primitive Operator">*</a> <a id="23971" class="Symbol">(</a><a id="23972" href="plfa.Lists.html#23931" class="Bound">n</a> <a id="23974" href="Agda.Builtin.Nat.html#388" class="Primitive Operator">∸</a> <a id="23976" class="Number">1</a><a id="23977" class="Symbol">)</a>
+</pre>{% endraw %}
+
+{::comment}
+## Monoids
+{:/}
+
+## 幺半群
+
+{::comment}
+Typically when we use a fold the operator is associative and the
+value is a left and right identity for the operator, meaning that the
+operator and the value form a _monoid_.
+{:/}
+
+一般来说，我们会对于折叠函数使用一个满足结合律的运算符，和这个运算符的左右幺元。
+这意味着这个运算符和这个值形成了一个**幺半群**（Monoid）。
+
+{::comment}
+We can define a monoid as a suitable record type:
+{:/}
+
+我们可以用一个合适的记录类型来定义幺半群：
+
+{% raw %}<pre class="Agda"><a id="24387" class="Keyword">record</a> <a id="IsMonoid"></a><a id="24394" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24394" class="Record">IsMonoid</a> <a id="24403" class="Symbol">{</a><a id="24404" href="plfa.Lists.html#24404" class="Bound">A</a> <a id="24406" class="Symbol">:</a> <a id="24408" class="PrimitiveType">Set</a><a id="24411" class="Symbol">}</a> <a id="24413" class="Symbol">(</a><a id="24414" href="plfa.Lists.html#24414" class="Bound Operator">_⊗_</a> <a id="24418" class="Symbol">:</a> <a id="24420" href="plfa.Lists.html#24404" class="Bound">A</a> <a id="24422" class="Symbol">→</a> <a id="24424" href="plfa.Lists.html#24404" class="Bound">A</a> <a id="24426" class="Symbol">→</a> <a id="24428" href="plfa.Lists.html#24404" class="Bound">A</a><a id="24429" class="Symbol">)</a> <a id="24431" class="Symbol">(</a><a id="24432" href="plfa.Lists.html#24432" class="Bound">e</a> <a id="24434" class="Symbol">:</a> <a id="24436" href="plfa.Lists.html#24404" class="Bound">A</a><a id="24437" class="Symbol">)</a> <a id="24439" class="Symbol">:</a> <a id="24441" class="PrimitiveType">Set</a> <a id="24445" class="Keyword">where</a>
+  <a id="24453" class="Keyword">field</a>
+    <a id="IsMonoid.assoc"></a><a id="24463" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24463" class="Field">assoc</a> <a id="24469" class="Symbol">:</a> <a id="24471" class="Symbol">∀</a> <a id="24473" class="Symbol">(</a><a id="24474" href="plfa.Lists.html#24474" class="Bound">x</a> <a id="24476" href="plfa.Lists.html#24476" class="Bound">y</a> <a id="24478" href="plfa.Lists.html#24478" class="Bound">z</a> <a id="24480" class="Symbol">:</a> <a id="24482" href="plfa.Lists.html#24404" class="Bound">A</a><a id="24483" class="Symbol">)</a> <a id="24485" class="Symbol">→</a> <a id="24487" class="Symbol">(</a><a id="24488" href="plfa.Lists.html#24474" class="Bound">x</a> <a id="24490" href="plfa.Lists.html#24414" class="Bound Operator">⊗</a> <a id="24492" href="plfa.Lists.html#24476" class="Bound">y</a><a id="24493" class="Symbol">)</a> <a id="24495" href="plfa.Lists.html#24414" class="Bound Operator">⊗</a> <a id="24497" href="plfa.Lists.html#24478" class="Bound">z</a> <a id="24499" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="24501" href="plfa.Lists.html#24474" class="Bound">x</a> <a id="24503" href="plfa.Lists.html#24414" class="Bound Operator">⊗</a> <a id="24505" class="Symbol">(</a><a id="24506" href="plfa.Lists.html#24476" class="Bound">y</a> <a id="24508" href="plfa.Lists.html#24414" class="Bound Operator">⊗</a> <a id="24510" href="plfa.Lists.html#24478" class="Bound">z</a><a id="24511" class="Symbol">)</a>
+    <a id="IsMonoid.identityˡ"></a><a id="24517" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24517" class="Field">identityˡ</a> <a id="24527" class="Symbol">:</a> <a id="24529" class="Symbol">∀</a> <a id="24531" class="Symbol">(</a><a id="24532" href="plfa.Lists.html#24532" class="Bound">x</a> <a id="24534" class="Symbol">:</a> <a id="24536" href="plfa.Lists.html#24404" class="Bound">A</a><a id="24537" class="Symbol">)</a> <a id="24539" class="Symbol">→</a> <a id="24541" href="plfa.Lists.html#24432" class="Bound">e</a> <a id="24543" href="plfa.Lists.html#24414" class="Bound Operator">⊗</a> <a id="24545" href="plfa.Lists.html#24532" class="Bound">x</a> <a id="24547" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="24549" href="plfa.Lists.html#24532" class="Bound">x</a>
+    <a id="IsMonoid.identityʳ"></a><a id="24555" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24555" class="Field">identityʳ</a> <a id="24565" class="Symbol">:</a> <a id="24567" class="Symbol">∀</a> <a id="24569" class="Symbol">(</a><a id="24570" href="plfa.Lists.html#24570" class="Bound">x</a> <a id="24572" class="Symbol">:</a> <a id="24574" href="plfa.Lists.html#24404" class="Bound">A</a><a id="24575" class="Symbol">)</a> <a id="24577" class="Symbol">→</a> <a id="24579" href="plfa.Lists.html#24570" class="Bound">x</a> <a id="24581" href="plfa.Lists.html#24414" class="Bound Operator">⊗</a> <a id="24583" href="plfa.Lists.html#24432" class="Bound">e</a> <a id="24585" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="24587" href="plfa.Lists.html#24570" class="Bound">x</a>
+
+<a id="24590" class="Keyword">open</a> <a id="24595" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24394" class="Module">IsMonoid</a>
+</pre>{% endraw %}
+{::comment}
+As examples, sum and zero, multiplication and one, and append and the empty
+list, are all examples of monoids:
+{:/}
+
+举例来说，加法和零，乘法和一，附加和空列表，都是幺半群：
+
+{% raw %}<pre class="Agda"><a id="+-monoid"></a><a id="24772" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24772" class="Function">+-monoid</a> <a id="24781" class="Symbol">:</a> <a id="24783" href="plfa.Lists.html#24394" class="Record">IsMonoid</a> <a id="24792" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#298" class="Primitive Operator">_+_</a> <a id="24796" class="Number">0</a>
+<a id="24798" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24772" class="Function">+-monoid</a> <a id="24807" class="Symbol">=</a>
+  <a id="24811" class="Keyword">record</a>
+    <a id="24822" class="Symbol">{</a> <a id="24824" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24463" class="Field">assoc</a> <a id="24830" class="Symbol">=</a> <a id="24832" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Properties.html#11578" class="Function">+-assoc</a>
+    <a id="24844" class="Symbol">;</a> <a id="24846" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24517" class="Field">identityˡ</a> <a id="24856" class="Symbol">=</a> <a id="24858" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Properties.html#11679" class="Function">+-identityˡ</a>
+    <a id="24874" class="Symbol">;</a> <a id="24876" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24555" class="Field">identityʳ</a> <a id="24886" class="Symbol">=</a> <a id="24888" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Properties.html#11734" class="Function">+-identityʳ</a>
+    <a id="24904" class="Symbol">}</a>
+
+<a id="*-monoid"></a><a id="24907" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24907" class="Function">*-monoid</a> <a id="24916" class="Symbol">:</a> <a id="24918" href="plfa.Lists.html#24394" class="Record">IsMonoid</a> <a id="24927" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Nat.html#501" class="Primitive Operator">_*_</a> <a id="24931" class="Number">1</a>
+<a id="24933" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24907" class="Function">*-monoid</a> <a id="24942" class="Symbol">=</a>
+  <a id="24946" class="Keyword">record</a>
+    <a id="24957" class="Symbol">{</a> <a id="24959" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24463" class="Field">assoc</a> <a id="24965" class="Symbol">=</a> <a id="24967" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Properties.html#18464" class="Function">*-assoc</a>
+    <a id="24979" class="Symbol">;</a> <a id="24981" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24517" class="Field">identityˡ</a> <a id="24991" class="Symbol">=</a> <a id="24993" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Properties.html#17362" class="Function">*-identityˡ</a>
+    <a id="25009" class="Symbol">;</a> <a id="25011" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24555" class="Field">identityʳ</a> <a id="25021" class="Symbol">=</a> <a id="25023" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Properties.html#17426" class="Function">*-identityʳ</a>
+    <a id="25039" class="Symbol">}</a>
+
+<a id="++-monoid"></a><a id="25042" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#25042" class="Function">++-monoid</a> <a id="25052" class="Symbol">:</a> <a id="25054" class="Symbol">∀</a> <a id="25056" class="Symbol">{</a><a id="25057" href="plfa.Lists.html#25057" class="Bound">A</a> <a id="25059" class="Symbol">:</a> <a id="25061" class="PrimitiveType">Set</a><a id="25064" class="Symbol">}</a> <a id="25066" class="Symbol">→</a> <a id="25068" href="plfa.Lists.html#24394" class="Record">IsMonoid</a> <a id="25077" class="Symbol">{</a><a id="25078" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="25083" href="plfa.Lists.html#25057" class="Bound">A</a><a id="25084" class="Symbol">}</a> <a id="25086" href="plfa.Lists.html#4651" class="Function Operator">_++_</a> <a id="25091" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+<a id="25094" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#25042" class="Function">++-monoid</a> <a id="25104" class="Symbol">=</a>
+  <a id="25108" class="Keyword">record</a>
+    <a id="25119" class="Symbol">{</a> <a id="25121" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24463" class="Field">assoc</a> <a id="25127" class="Symbol">=</a> <a id="25129" href="plfa.Lists.html#6032" class="Function">++-assoc</a>
+    <a id="25142" class="Symbol">;</a> <a id="25144" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24517" class="Field">identityˡ</a> <a id="25154" class="Symbol">=</a> <a id="25156" href="plfa.Lists.html#7578" class="Function">++-identityˡ</a>
+    <a id="25173" class="Symbol">;</a> <a id="25175" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24555" class="Field">identityʳ</a> <a id="25185" class="Symbol">=</a> <a id="25187" href="plfa.Lists.html#7792" class="Function">++-identityʳ</a>
+    <a id="25204" class="Symbol">}</a>
+</pre>{% endraw %}
+{::comment}
+If `_⊗_` and `e` form a monoid, then we can re-express fold on the
+same operator and an arbitrary value:
+{:/}
+
+如果 `_⊗_` 和 `e` 构成一个幺半群，那么我们可以用相同的运算符和一个任意的值来表示折叠：
+
+{% raw %}<pre class="Agda"><a id="foldr-monoid"></a><a id="25389" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#25389" class="Function">foldr-monoid</a> <a id="25402" class="Symbol">:</a> <a id="25404" class="Symbol">∀</a> <a id="25406" class="Symbol">{</a><a id="25407" href="plfa.Lists.html#25407" class="Bound">A</a> <a id="25409" class="Symbol">:</a> <a id="25411" class="PrimitiveType">Set</a><a id="25414" class="Symbol">}</a> <a id="25416" class="Symbol">(</a><a id="25417" href="plfa.Lists.html#25417" class="Bound Operator">_⊗_</a> <a id="25421" class="Symbol">:</a> <a id="25423" href="plfa.Lists.html#25407" class="Bound">A</a> <a id="25425" class="Symbol">→</a> <a id="25427" href="plfa.Lists.html#25407" class="Bound">A</a> <a id="25429" class="Symbol">→</a> <a id="25431" href="plfa.Lists.html#25407" class="Bound">A</a><a id="25432" class="Symbol">)</a> <a id="25434" class="Symbol">(</a><a id="25435" href="plfa.Lists.html#25435" class="Bound">e</a> <a id="25437" class="Symbol">:</a> <a id="25439" href="plfa.Lists.html#25407" class="Bound">A</a><a id="25440" class="Symbol">)</a> <a id="25442" class="Symbol">→</a> <a id="25444" href="plfa.Lists.html#24394" class="Record">IsMonoid</a> <a id="25453" href="plfa.Lists.html#25417" class="Bound Operator">_⊗_</a> <a id="25457" href="plfa.Lists.html#25435" class="Bound">e</a> <a id="25459" class="Symbol">→</a>
+  <a id="25463" class="Symbol">∀</a> <a id="25465" class="Symbol">(</a><a id="25466" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#25466" class="Bound">xs</a> <a id="25469" class="Symbol">:</a> <a id="25471" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="25476" href="plfa.Lists.html#25407" class="Bound">A</a><a id="25477" class="Symbol">)</a> <a id="25479" class="Symbol">(</a><a id="25480" href="plfa.Lists.html#25480" class="Bound">y</a> <a id="25482" class="Symbol">:</a> <a id="25484" href="plfa.Lists.html#25407" class="Bound">A</a><a id="25485" class="Symbol">)</a> <a id="25487" class="Symbol">→</a> <a id="25489" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="25495" href="plfa.Lists.html#25417" class="Bound Operator">_⊗_</a> <a id="25499" href="plfa.Lists.html#25480" class="Bound">y</a> <a id="25501" href="plfa.Lists.html#25466" class="Bound">xs</a> <a id="25504" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="25506" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="25512" href="plfa.Lists.html#25417" class="Bound Operator">_⊗_</a> <a id="25516" href="plfa.Lists.html#25435" class="Bound">e</a> <a id="25518" href="plfa.Lists.html#25466" class="Bound">xs</a> <a id="25521" href="plfa.Lists.html#25417" class="Bound Operator">⊗</a> <a id="25523" href="plfa.Lists.html#25480" class="Bound">y</a>
+<a id="25525" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#25389" class="Function">foldr-monoid</a> <a id="25538" href="plfa.Lists.html#25538" class="Bound Operator">_⊗_</a> <a id="25542" href="plfa.Lists.html#25542" class="Bound">e</a> <a id="25544" href="plfa.Lists.html#25544" class="Bound">⊗-monoid</a> <a id="25553" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="25556" href="plfa.Lists.html#25556" class="Bound">y</a> <a id="25558" class="Symbol">=</a>
+  <a id="25562" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="25572" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="25578" href="plfa.Lists.html#25538" class="Bound Operator">_⊗_</a> <a id="25582" href="plfa.Lists.html#25556" class="Bound">y</a> <a id="25584" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="25589" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="25597" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#25556" class="Bound">y</a>
+  <a id="25601" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">≡⟨</a> <a id="25604" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#939" class="Function">sym</a> <a id="25608" class="Symbol">(</a><a id="25609" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24517" class="Field">identityˡ</a> <a id="25619" href="plfa.Lists.html#25544" class="Bound">⊗-monoid</a> <a id="25628" href="plfa.Lists.html#25556" class="Bound">y</a><a id="25629" class="Symbol">)</a> <a id="25631" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">⟩</a>
+    <a id="25637" class="Symbol">(</a><a id="25638" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#25542" class="Bound">e</a> <a id="25640" href="plfa.Lists.html#25538" class="Bound Operator">⊗</a> <a id="25642" href="plfa.Lists.html#25556" class="Bound">y</a><a id="25643" class="Symbol">)</a>
+  <a id="25647" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="25655" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="25661" href="plfa.Lists.html#25538" class="Bound Operator">_⊗_</a> <a id="25665" href="plfa.Lists.html#25542" class="Bound">e</a> <a id="25667" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="25670" href="plfa.Lists.html#25538" class="Bound Operator">⊗</a> <a id="25672" href="plfa.Lists.html#25556" class="Bound">y</a>
+  <a id="25676" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+<a id="25678" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#25389" class="Function">foldr-monoid</a> <a id="25691" href="plfa.Lists.html#25691" class="Bound Operator">_⊗_</a> <a id="25695" href="plfa.Lists.html#25695" class="Bound">e</a> <a id="25697" href="plfa.Lists.html#25697" class="Bound">⊗-monoid</a> <a id="25706" class="Symbol">(</a><a id="25707" href="plfa.Lists.html#25707" class="Bound">x</a> <a id="25709" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="25711" href="plfa.Lists.html#25711" class="Bound">xs</a><a id="25713" class="Symbol">)</a> <a id="25715" href="plfa.Lists.html#25715" class="Bound">y</a> <a id="25717" class="Symbol">=</a>
+  <a id="25721" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="25731" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="25737" href="plfa.Lists.html#25691" class="Bound Operator">_⊗_</a> <a id="25741" href="plfa.Lists.html#25715" class="Bound">y</a> <a id="25743" class="Symbol">(</a><a id="25744" href="plfa.Lists.html#25707" class="Bound">x</a> <a id="25746" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="25748" href="plfa.Lists.html#25711" class="Bound">xs</a><a id="25750" class="Symbol">)</a>
+  <a id="25754" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="25762" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#25707" class="Bound">x</a> <a id="25764" href="plfa.Lists.html#25691" class="Bound Operator">⊗</a> <a id="25766" class="Symbol">(</a><a id="25767" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="25773" href="plfa.Lists.html#25691" class="Bound Operator">_⊗_</a> <a id="25777" href="plfa.Lists.html#25715" class="Bound">y</a> <a id="25779" href="plfa.Lists.html#25711" class="Bound">xs</a><a id="25781" class="Symbol">)</a>
+  <a id="25785" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">≡⟨</a> <a id="25788" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#1090" class="Function">cong</a> <a id="25793" class="Symbol">(</a><a id="25794" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#25707" class="Bound">x</a> <a id="25796" href="plfa.Lists.html#25691" class="Bound Operator">⊗_</a><a id="25798" class="Symbol">)</a> <a id="25800" class="Symbol">(</a><a id="25801" href="plfa.Lists.html#25389" class="Function">foldr-monoid</a> <a id="25814" href="plfa.Lists.html#25691" class="Bound Operator">_⊗_</a> <a id="25818" href="plfa.Lists.html#25695" class="Bound">e</a> <a id="25820" href="plfa.Lists.html#25697" class="Bound">⊗-monoid</a> <a id="25829" href="plfa.Lists.html#25711" class="Bound">xs</a> <a id="25832" href="plfa.Lists.html#25715" class="Bound">y</a><a id="25833" class="Symbol">)</a> <a id="25835" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">⟩</a>
+    <a id="25841" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#25707" class="Bound">x</a> <a id="25843" href="plfa.Lists.html#25691" class="Bound Operator">⊗</a> <a id="25845" class="Symbol">(</a><a id="25846" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="25852" href="plfa.Lists.html#25691" class="Bound Operator">_⊗_</a> <a id="25856" href="plfa.Lists.html#25695" class="Bound">e</a> <a id="25858" href="plfa.Lists.html#25711" class="Bound">xs</a> <a id="25861" href="plfa.Lists.html#25691" class="Bound Operator">⊗</a> <a id="25863" href="plfa.Lists.html#25715" class="Bound">y</a><a id="25864" class="Symbol">)</a>
+  <a id="25868" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">≡⟨</a> <a id="25871" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#939" class="Function">sym</a> <a id="25875" class="Symbol">(</a><a id="25876" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#24463" class="Field">assoc</a> <a id="25882" href="plfa.Lists.html#25697" class="Bound">⊗-monoid</a> <a id="25891" href="plfa.Lists.html#25707" class="Bound">x</a> <a id="25893" class="Symbol">(</a><a id="25894" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="25900" href="plfa.Lists.html#25691" class="Bound Operator">_⊗_</a> <a id="25904" href="plfa.Lists.html#25695" class="Bound">e</a> <a id="25906" href="plfa.Lists.html#25711" class="Bound">xs</a><a id="25908" class="Symbol">)</a> <a id="25910" href="plfa.Lists.html#25715" class="Bound">y</a><a id="25911" class="Symbol">)</a> <a id="25913" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">⟩</a>
+    <a id="25919" class="Symbol">(</a><a id="25920" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#25707" class="Bound">x</a> <a id="25922" href="plfa.Lists.html#25691" class="Bound Operator">⊗</a> <a id="25924" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="25930" href="plfa.Lists.html#25691" class="Bound Operator">_⊗_</a> <a id="25934" href="plfa.Lists.html#25695" class="Bound">e</a> <a id="25936" href="plfa.Lists.html#25711" class="Bound">xs</a><a id="25938" class="Symbol">)</a> <a id="25940" href="plfa.Lists.html#25691" class="Bound Operator">⊗</a> <a id="25942" href="plfa.Lists.html#25715" class="Bound">y</a>
+  <a id="25946" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2655" class="Function Operator">≡⟨⟩</a>
+    <a id="25954" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="25960" href="plfa.Lists.html#25691" class="Bound Operator">_⊗_</a> <a id="25964" href="plfa.Lists.html#25695" class="Bound">e</a> <a id="25966" class="Symbol">(</a><a id="25967" href="plfa.Lists.html#25707" class="Bound">x</a> <a id="25969" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="25971" href="plfa.Lists.html#25711" class="Bound">xs</a><a id="25973" class="Symbol">)</a> <a id="25975" href="plfa.Lists.html#25691" class="Bound Operator">⊗</a> <a id="25977" href="plfa.Lists.html#25715" class="Bound">y</a>
+  <a id="25981" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+As a consequence, using a previous exercise, we have the following:
+{:/}
+
+使用之前练习中的一个结论，我们可以得到如下：
+
+{% raw %}<pre class="Agda"><a id="foldr-monoid-++"></a><a id="26102" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#26102" class="Function">foldr-monoid-++</a> <a id="26118" class="Symbol">:</a> <a id="26120" class="Symbol">∀</a> <a id="26122" class="Symbol">{</a><a id="26123" href="plfa.Lists.html#26123" class="Bound">A</a> <a id="26125" class="Symbol">:</a> <a id="26127" class="PrimitiveType">Set</a><a id="26130" class="Symbol">}</a> <a id="26132" class="Symbol">(</a><a id="26133" href="plfa.Lists.html#26133" class="Bound Operator">_⊗_</a> <a id="26137" class="Symbol">:</a> <a id="26139" href="plfa.Lists.html#26123" class="Bound">A</a> <a id="26141" class="Symbol">→</a> <a id="26143" href="plfa.Lists.html#26123" class="Bound">A</a> <a id="26145" class="Symbol">→</a> <a id="26147" href="plfa.Lists.html#26123" class="Bound">A</a><a id="26148" class="Symbol">)</a> <a id="26150" class="Symbol">(</a><a id="26151" href="plfa.Lists.html#26151" class="Bound">e</a> <a id="26153" class="Symbol">:</a> <a id="26155" href="plfa.Lists.html#26123" class="Bound">A</a><a id="26156" class="Symbol">)</a> <a id="26158" class="Symbol">→</a> <a id="26160" href="plfa.Lists.html#24394" class="Record">IsMonoid</a> <a id="26169" href="plfa.Lists.html#26133" class="Bound Operator">_⊗_</a> <a id="26173" href="plfa.Lists.html#26151" class="Bound">e</a> <a id="26175" class="Symbol">→</a>
+  <a id="26179" class="Symbol">∀</a> <a id="26181" class="Symbol">(</a><a id="26182" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#26182" class="Bound">xs</a> <a id="26185" href="plfa.Lists.html#26185" class="Bound">ys</a> <a id="26188" class="Symbol">:</a> <a id="26190" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="26195" href="plfa.Lists.html#26123" class="Bound">A</a><a id="26196" class="Symbol">)</a> <a id="26198" class="Symbol">→</a> <a id="26200" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="26206" href="plfa.Lists.html#26133" class="Bound Operator">_⊗_</a> <a id="26210" href="plfa.Lists.html#26151" class="Bound">e</a> <a id="26212" class="Symbol">(</a><a id="26213" href="plfa.Lists.html#26182" class="Bound">xs</a> <a id="26216" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="26219" href="plfa.Lists.html#26185" class="Bound">ys</a><a id="26221" class="Symbol">)</a> <a id="26223" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡</a> <a id="26225" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="26231" href="plfa.Lists.html#26133" class="Bound Operator">_⊗_</a> <a id="26235" href="plfa.Lists.html#26151" class="Bound">e</a> <a id="26237" href="plfa.Lists.html#26182" class="Bound">xs</a> <a id="26240" href="plfa.Lists.html#26133" class="Bound Operator">⊗</a> <a id="26242" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="26248" href="plfa.Lists.html#26133" class="Bound Operator">_⊗_</a> <a id="26252" href="plfa.Lists.html#26151" class="Bound">e</a> <a id="26254" href="plfa.Lists.html#26185" class="Bound">ys</a>
+<a id="26257" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#26102" class="Function">foldr-monoid-++</a> <a id="26273" href="plfa.Lists.html#26273" class="Bound Operator">_⊗_</a> <a id="26277" href="plfa.Lists.html#26277" class="Bound">e</a> <a id="26279" href="plfa.Lists.html#26279" class="Bound">monoid-⊗</a> <a id="26288" href="plfa.Lists.html#26288" class="Bound">xs</a> <a id="26291" href="plfa.Lists.html#26291" class="Bound">ys</a> <a id="26294" class="Symbol">=</a>
+  <a id="26298" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2597" class="Function Operator">begin</a>
+    <a id="26308" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="26314" href="plfa.Lists.html#26273" class="Bound Operator">_⊗_</a> <a id="26318" href="plfa.Lists.html#26277" class="Bound">e</a> <a id="26320" class="Symbol">(</a><a id="26321" href="plfa.Lists.html#26288" class="Bound">xs</a> <a id="26324" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="26327" href="plfa.Lists.html#26291" class="Bound">ys</a><a id="26329" class="Symbol">)</a>
+  <a id="26333" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">≡⟨</a> <a id="26336" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#22355" class="Postulate">foldr-++</a> <a id="26345" href="plfa.Lists.html#26273" class="Bound Operator">_⊗_</a> <a id="26349" href="plfa.Lists.html#26277" class="Bound">e</a> <a id="26351" href="plfa.Lists.html#26288" class="Bound">xs</a> <a id="26354" href="plfa.Lists.html#26291" class="Bound">ys</a> <a id="26357" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">⟩</a>
+    <a id="26363" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="26369" href="plfa.Lists.html#26273" class="Bound Operator">_⊗_</a> <a id="26373" class="Symbol">(</a><a id="26374" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="26380" href="plfa.Lists.html#26273" class="Bound Operator">_⊗_</a> <a id="26384" href="plfa.Lists.html#26277" class="Bound">e</a> <a id="26386" href="plfa.Lists.html#26291" class="Bound">ys</a><a id="26388" class="Symbol">)</a> <a id="26390" href="plfa.Lists.html#26288" class="Bound">xs</a>
+  <a id="26395" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">≡⟨</a> <a id="26398" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#25389" class="Function">foldr-monoid</a> <a id="26411" href="plfa.Lists.html#26273" class="Bound Operator">_⊗_</a> <a id="26415" href="plfa.Lists.html#26277" class="Bound">e</a> <a id="26417" href="plfa.Lists.html#26279" class="Bound">monoid-⊗</a> <a id="26426" href="plfa.Lists.html#26288" class="Bound">xs</a> <a id="26429" class="Symbol">(</a><a id="26430" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="26436" href="plfa.Lists.html#26273" class="Bound Operator">_⊗_</a> <a id="26440" href="plfa.Lists.html#26277" class="Bound">e</a> <a id="26442" href="plfa.Lists.html#26291" class="Bound">ys</a><a id="26444" class="Symbol">)</a> <a id="26446" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2714" class="Function Operator">⟩</a>
+    <a id="26452" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#20195" class="Function">foldr</a> <a id="26458" href="plfa.Lists.html#26273" class="Bound Operator">_⊗_</a> <a id="26462" href="plfa.Lists.html#26277" class="Bound">e</a> <a id="26464" href="plfa.Lists.html#26288" class="Bound">xs</a> <a id="26467" href="plfa.Lists.html#26273" class="Bound Operator">⊗</a> <a id="26469" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="26475" href="plfa.Lists.html#26273" class="Bound Operator">_⊗_</a> <a id="26479" href="plfa.Lists.html#26277" class="Bound">e</a> <a id="26481" href="plfa.Lists.html#26291" class="Bound">ys</a>
+  <a id="26486" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.PropositionalEquality.Core.html#2892" class="Function Operator">∎</a>
+</pre>{% endraw %}
+{::comment}
+#### Exercise `foldl`
+{:/}
+
+#### 练习 `foldl`
+
+{::comment}
+Define a function `foldl` which is analogous to `foldr`, but where
+operations associate to the left rather than the right.  For example:
+{:/}
+
+定义一个函数 `foldl`，与 `foldr` 相似，但是运算符向左结合，而不是向右。例如：
+
+    foldr _⊗_ e [ x , y , z ]  =  x ⊗ (y ⊗ (z ⊗ e))
+    foldl _⊗_ e [ x , y , z ]  =  ((e ⊗ x) ⊗ y) ⊗ z
+
+{::comment}
+{% raw %}<pre class="Agda"><a id="26875" class="Comment">-- Your code goes here</a>
+</pre>{% endraw %}{:/}
+
+{% raw %}<pre class="Agda"><a id="26912" class="Comment">-- 请将代码写在此处。</a>
+</pre>{% endraw %}
+
+{::comment}
+#### Exercise `foldr-monoid-foldl`
+{:/}
+
+#### 练习 `foldr-monoid-foldl`
+
+{::comment}
+Show that if `_⊗_` and `e` form a monoid, then `foldr _⊗_ e` and
+`foldl _⊗_ e` always compute the same result.
+{:/}
+
+证明如果 `_⊗_` 和 `e` 构成幺半群，那么 `foldr _⊗_ e` 和 `foldl _⊗_ e` 的结果
+永远是相同的。
+
+{::comment}
+{% raw %}<pre class="Agda"><a id="27228" class="Comment">-- Your code goes here</a>
+</pre>{% endraw %}{:/}
+
+{% raw %}<pre class="Agda"><a id="27265" class="Comment">-- 请将代码写在此处。</a>
+</pre>{% endraw %}
+
+{::comment}
+## All {#All}
+{:/}
+
+## 所有 {#All}
+
+{::comment}
+We can also define predicates over lists. Two of the most important
+are `All` and `Any`.
+{:/}
+
+我们也可以定义关于列表的谓词。最重要的两个谓词是 `All` 和 `Any`。
+
+{::comment}
+Predicate `All P` holds if predicate `P` is satisfied by every element of a list:
+{:/}
+
+谓词 `All P` 当列表里的所有元素满足 `P` 时成立：
+
+{% raw %}<pre class="Agda"><a id="27615" class="Keyword">data</a> <a id="All"></a><a id="27620" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#27620" class="Datatype">All</a> <a id="27624" class="Symbol">{</a><a id="27625" href="plfa.Lists.html#27625" class="Bound">A</a> <a id="27627" class="Symbol">:</a> <a id="27629" class="PrimitiveType">Set</a><a id="27632" class="Symbol">}</a> <a id="27634" class="Symbol">(</a><a id="27635" href="plfa.Lists.html#27635" class="Bound">P</a> <a id="27637" class="Symbol">:</a> <a id="27639" href="plfa.Lists.html#27625" class="Bound">A</a> <a id="27641" class="Symbol">→</a> <a id="27643" class="PrimitiveType">Set</a><a id="27646" class="Symbol">)</a> <a id="27648" class="Symbol">:</a> <a id="27650" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="27655" href="plfa.Lists.html#27625" class="Bound">A</a> <a id="27657" class="Symbol">→</a> <a id="27659" class="PrimitiveType">Set</a> <a id="27663" class="Keyword">where</a>
+  <a id="All.[]"></a><a id="27671" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#27671" class="InductiveConstructor">[]</a>  <a id="27675" class="Symbol">:</a> <a id="27677" href="plfa.Lists.html#27620" class="Datatype">All</a> <a id="27681" href="plfa.Lists.html#27635" class="Bound">P</a> <a id="27683" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>
+  <a id="All._∷_"></a><a id="27688" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#27688" class="InductiveConstructor Operator">_∷_</a> <a id="27692" class="Symbol">:</a> <a id="27694" class="Symbol">∀</a> <a id="27696" class="Symbol">{</a><a id="27697" href="plfa.Lists.html#27697" class="Bound">x</a> <a id="27699" class="Symbol">:</a> <a id="27701" href="plfa.Lists.html#27625" class="Bound">A</a><a id="27702" class="Symbol">}</a> <a id="27704" class="Symbol">{</a><a id="27705" href="plfa.Lists.html#27705" class="Bound">xs</a> <a id="27708" class="Symbol">:</a> <a id="27710" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="27715" href="plfa.Lists.html#27625" class="Bound">A</a><a id="27716" class="Symbol">}</a> <a id="27718" class="Symbol">→</a> <a id="27720" href="plfa.Lists.html#27635" class="Bound">P</a> <a id="27722" href="plfa.Lists.html#27697" class="Bound">x</a> <a id="27724" class="Symbol">→</a> <a id="27726" href="plfa.Lists.html#27620" class="Datatype">All</a> <a id="27730" href="plfa.Lists.html#27635" class="Bound">P</a> <a id="27732" href="plfa.Lists.html#27705" class="Bound">xs</a> <a id="27735" class="Symbol">→</a> <a id="27737" href="plfa.Lists.html#27620" class="Datatype">All</a> <a id="27741" href="plfa.Lists.html#27635" class="Bound">P</a> <a id="27743" class="Symbol">(</a><a id="27744" href="plfa.Lists.html#27697" class="Bound">x</a> <a id="27746" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="27748" href="plfa.Lists.html#27705" class="Bound">xs</a><a id="27750" class="Symbol">)</a>
+</pre>{% endraw %}
+{::comment}
+The type has two constructors, reusing the names of the same constructors for lists.
+The first asserts that `P` holds for every element of the empty list.
+The second asserts that if `P` holds of the head of a list and for every
+element of the tail of a list, then `P` holds for every element of the list.
+Agda uses types to disambiguate whether the constructor is building
+a list or evidence that `All P` holds.
+{:/}
+
+这个类型有两个构造器，使用了与列表构造器相同的名称。第一个断言了 `P` 对于空列表的任何元素成立。
+第二个断言了如果 `P` 对于列表的头元素和尾列表的所有元素成立，那么 `P` 对于这个列表的任何元素成立。
+Agda 使用类型来区分构造器是用于构造一个列表，还是构造 `All P` 成立的证明。
+
+{::comment}
+For example, `All (_≤ 2)` holds of a list where every element is less
+than or equal to two.  Recall that `z≤n` proves `zero ≤ n` for any
+`n`, and that if `m≤n` proves `m ≤ n` then `s≤s m≤n` proves `suc m ≤
+suc n`, for any `m` and `n`:
+{:/}
+
+比如说，`All (_≤ 2)` 对于一个每一个元素都小于等于二的列表成立。
+回忆 `z≤n` 证明了对于任意 `n`， `zero ≤ n` 成立；
+对于任意 `m` 和 `n`，如果 `m≤n` 证明了 `m ≤ n`，那么 `s≤s m≤n` 证明了 `suc m ≤
+suc n`:
+
+{% raw %}<pre class="Agda"><a id="28743" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#28743" class="Function">_</a> <a id="28745" class="Symbol">:</a> <a id="28747" href="plfa.Lists.html#27620" class="Datatype">All</a> <a id="28751" class="Symbol">(</a><a id="28752" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Base.html#895" class="Datatype Operator">_≤</a> <a id="28755" class="Number">2</a><a id="28756" class="Symbol">)</a> <a id="28758" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">[</a> <a id="28760" class="Number">0</a> <a id="28762" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="28764" class="Number">1</a> <a id="28766" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">,</a> <a id="28768" class="Number">2</a> <a id="28770" href="plfa.Lists.html#3872" class="InductiveConstructor Operator">]</a>
+<a id="28772" class="Symbol">_</a> <a id="28774" class="Symbol">=</a> <a id="28776" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Base.html#918" class="InductiveConstructor">z≤n</a> <a id="28780" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#27688" class="InductiveConstructor Operator">∷</a> <a id="28782" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Base.html#960" class="InductiveConstructor">s≤s</a> <a id="28786" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Base.html#918" class="InductiveConstructor">z≤n</a> <a id="28790" href="plfa.Lists.html#27688" class="InductiveConstructor Operator">∷</a> <a id="28792" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Base.html#960" class="InductiveConstructor">s≤s</a> <a id="28796" class="Symbol">(</a><a id="28797" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Base.html#960" class="InductiveConstructor">s≤s</a> <a id="28801" href="https://agda.github.io/agda-stdlib/v1.1/Data.Nat.Base.html#918" class="InductiveConstructor">z≤n</a><a id="28804" class="Symbol">)</a> <a id="28806" href="plfa.Lists.html#27688" class="InductiveConstructor Operator">∷</a> <a id="28808" href="plfa.Lists.html#27671" class="InductiveConstructor">[]</a>
+</pre>{% endraw %}
+{::comment}
+Here `_∷_` and `[]` are the constructors of `All P` rather than of `List A`.
+The three items are proofs of `0 ≤ 2`, `1 ≤ 2`, and `2 ≤ 2`, respectively.
+{:/}
+
+这里 `_∷_` 和 `[]` 是 `All P` 的构造器，而不是 `List A` 的。
+这三项分别是 `0 ≤ 2`、 `1 ≤ 2` 和 `2 ≤ 2` 的证明。
+
+{::comment}
+(One might wonder whether a pattern such as `[_,_,_]` can be used to
+construct values of type `All` as well as type `List`, since both use
+the same constructors. Indeed it can, so long as both types are in
+scope when the pattern is declared.  That's not the case here, since
+`List` is defined before `[_,_,_]`, but `All` is defined later.)
+{:/}
+
+（读者可能会思考诸如 `[_,_,_]` 的模式是否可以用于构造 `All` 类型的值，
+像构造 `List` 类型的一样，因为两者使用了相同的构造器。事实上这样做是可以的，只要两个类型
+在模式声明时在作用域内。然而现在不是这样的情况，因为 `List` 先于 `[_,_,_]` 定义，而 `All` 在
+之后定义。）
+
+{::comment}
+## Any
+{:/}
+
+## 任意
+
+{::comment}
+Predicate `Any P` holds if predicate `P` is satisfied by some element of a list:
+{:/}
+
+谓词 `Any P` 当列表里的一些元素满足 `P` 时成立：
+
+{% raw %}<pre class="Agda"><a id="29761" class="Keyword">data</a> <a id="Any"></a><a id="29766" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#29766" class="Datatype">Any</a> <a id="29770" class="Symbol">{</a><a id="29771" href="plfa.Lists.html#29771" class="Bound">A</a> <a id="29773" class="Symbol">:</a> <a id="29775" class="PrimitiveType">Set</a><a id="29778" class="Symbol">}</a> <a id="29780" class="Symbol">(</a><a id="29781" href="plfa.Lists.html#29781" class="Bound">P</a> <a id="29783" class="Symbol">:</a> <a id="29785" href="plfa.Lists.html#29771" class="Bound">A</a> <a id="29787" class="Symbol">→</a> <a id="29789" class="PrimitiveType">Set</a><a id="29792" class="Symbol">)</a> <a id="29794" class="Symbol">:</a> <a id="29796" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="29801" href="plfa.Lists.html#29771" class="Bound">A</a> <a id="29803" class="Symbol">→</a> <a id="29805" class="PrimitiveType">Set</a> <a id="29809" class="Keyword">where</a>
+  <a id="Any.here"></a><a id="29817" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#29817" class="InductiveConstructor">here</a>  <a id="29823" class="Symbol">:</a> <a id="29825" class="Symbol">∀</a> <a id="29827" class="Symbol">{</a><a id="29828" href="plfa.Lists.html#29828" class="Bound">x</a> <a id="29830" class="Symbol">:</a> <a id="29832" href="plfa.Lists.html#29771" class="Bound">A</a><a id="29833" class="Symbol">}</a> <a id="29835" class="Symbol">{</a><a id="29836" href="plfa.Lists.html#29836" class="Bound">xs</a> <a id="29839" class="Symbol">:</a> <a id="29841" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="29846" href="plfa.Lists.html#29771" class="Bound">A</a><a id="29847" class="Symbol">}</a> <a id="29849" class="Symbol">→</a> <a id="29851" href="plfa.Lists.html#29781" class="Bound">P</a> <a id="29853" href="plfa.Lists.html#29828" class="Bound">x</a> <a id="29855" class="Symbol">→</a> <a id="29857" href="plfa.Lists.html#29766" class="Datatype">Any</a> <a id="29861" href="plfa.Lists.html#29781" class="Bound">P</a> <a id="29863" class="Symbol">(</a><a id="29864" href="plfa.Lists.html#29828" class="Bound">x</a> <a id="29866" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="29868" href="plfa.Lists.html#29836" class="Bound">xs</a><a id="29870" class="Symbol">)</a>
+  <a id="Any.there"></a><a id="29874" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#29874" class="InductiveConstructor">there</a> <a id="29880" class="Symbol">:</a> <a id="29882" class="Symbol">∀</a> <a id="29884" class="Symbol">{</a><a id="29885" href="plfa.Lists.html#29885" class="Bound">x</a> <a id="29887" class="Symbol">:</a> <a id="29889" href="plfa.Lists.html#29771" class="Bound">A</a><a id="29890" class="Symbol">}</a> <a id="29892" class="Symbol">{</a><a id="29893" href="plfa.Lists.html#29893" class="Bound">xs</a> <a id="29896" class="Symbol">:</a> <a id="29898" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="29903" href="plfa.Lists.html#29771" class="Bound">A</a><a id="29904" class="Symbol">}</a> <a id="29906" class="Symbol">→</a> <a id="29908" href="plfa.Lists.html#29766" class="Datatype">Any</a> <a id="29912" href="plfa.Lists.html#29781" class="Bound">P</a> <a id="29914" href="plfa.Lists.html#29893" class="Bound">xs</a> <a id="29917" class="Symbol">→</a> <a id="29919" href="plfa.Lists.html#29766" class="Datatype">Any</a> <a id="29923" href="plfa.Lists.html#29781" class="Bound">P</a> <a id="29925" class="Symbol">(</a><a id="29926" href="plfa.Lists.html#29885" class="Bound">x</a> <a id="29928" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="29930" href="plfa.Lists.html#29893" class="Bound">xs</a><a id="29932" class="Symbol">)</a>
+</pre>{% endraw %}
+{::comment}
+The first constructor provides evidence that the head of the list
+satisfies `P`, while the second provides evidence that some element of
+the tail of the list satisfies `P`.  For example, we can define list
+membership as follows:
+{:/}
+
+第一个构造器证明了列表的头元素满足 `P`，第二个构造器证明的列表的尾列表中的一些元素满足 `P`。
+举例来说，我们可以如下定义列表的成员关系：
+
+{% raw %}<pre class="Agda"><a id="30264" class="Keyword">infix</a> <a id="30270" class="Number">4</a> <a id="30272" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#30281" class="Function Operator">_∈_</a> <a id="30276" href="plfa.Lists.html#30351" class="Function Operator">_∉_</a>
+
+<a id="_∈_"></a><a id="30281" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#30281" class="Function Operator">_∈_</a> <a id="30285" class="Symbol">:</a> <a id="30287" class="Symbol">∀</a> <a id="30289" class="Symbol">{</a><a id="30290" href="plfa.Lists.html#30290" class="Bound">A</a> <a id="30292" class="Symbol">:</a> <a id="30294" class="PrimitiveType">Set</a><a id="30297" class="Symbol">}</a> <a id="30299" class="Symbol">(</a><a id="30300" href="plfa.Lists.html#30300" class="Bound">x</a> <a id="30302" class="Symbol">:</a> <a id="30304" href="plfa.Lists.html#30290" class="Bound">A</a><a id="30305" class="Symbol">)</a> <a id="30307" class="Symbol">(</a><a id="30308" href="plfa.Lists.html#30308" class="Bound">xs</a> <a id="30311" class="Symbol">:</a> <a id="30313" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="30318" href="plfa.Lists.html#30290" class="Bound">A</a><a id="30319" class="Symbol">)</a> <a id="30321" class="Symbol">→</a> <a id="30323" class="PrimitiveType">Set</a>
+<a id="30327" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#30327" class="Bound">x</a> <a id="30329" href="plfa.Lists.html#30281" class="Function Operator">∈</a> <a id="30331" href="plfa.Lists.html#30331" class="Bound">xs</a> <a id="30334" class="Symbol">=</a> <a id="30336" href="plfa.Lists.html#29766" class="Datatype">Any</a> <a id="30340" class="Symbol">(</a><a id="30341" href="plfa.Lists.html#30327" class="Bound">x</a> <a id="30343" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#125" class="Datatype Operator">≡_</a><a id="30345" class="Symbol">)</a> <a id="30347" href="plfa.Lists.html#30331" class="Bound">xs</a>
+
+<a id="_∉_"></a><a id="30351" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#30351" class="Function Operator">_∉_</a> <a id="30355" class="Symbol">:</a> <a id="30357" class="Symbol">∀</a> <a id="30359" class="Symbol">{</a><a id="30360" href="plfa.Lists.html#30360" class="Bound">A</a> <a id="30362" class="Symbol">:</a> <a id="30364" class="PrimitiveType">Set</a><a id="30367" class="Symbol">}</a> <a id="30369" class="Symbol">(</a><a id="30370" href="plfa.Lists.html#30370" class="Bound">x</a> <a id="30372" class="Symbol">:</a> <a id="30374" href="plfa.Lists.html#30360" class="Bound">A</a><a id="30375" class="Symbol">)</a> <a id="30377" class="Symbol">(</a><a id="30378" href="plfa.Lists.html#30378" class="Bound">xs</a> <a id="30381" class="Symbol">:</a> <a id="30383" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="30388" href="plfa.Lists.html#30360" class="Bound">A</a><a id="30389" class="Symbol">)</a> <a id="30391" class="Symbol">→</a> <a id="30393" class="PrimitiveType">Set</a>
+<a id="30397" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#30397" class="Bound">x</a> <a id="30399" href="plfa.Lists.html#30351" class="Function Operator">∉</a> <a id="30401" href="plfa.Lists.html#30401" class="Bound">xs</a> <a id="30404" class="Symbol">=</a> <a id="30406" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#535" class="Function Operator">¬</a> <a id="30408" class="Symbol">(</a><a id="30409" href="plfa.Lists.html#30397" class="Bound">x</a> <a id="30411" href="plfa.Lists.html#30281" class="Function Operator">∈</a> <a id="30413" href="plfa.Lists.html#30401" class="Bound">xs</a><a id="30415" class="Symbol">)</a>
+</pre>{% endraw %}
+{::comment}
+For example, zero is an element of the list `[ 0 , 1 , 0 , 2 ]`.  Indeed, we can demonstrate
+this fact in two different ways, corresponding to the two different
+occurrences of zero in the list, as the first element and as the third element:
+{:/}
+
+比如说，零是列表 `[ 0 , 1 , 0 , 2 ]` 中的一个元素。
+我们可以用两种方法来展示这个事实，对应零在列表中出现了两次：第一个元素和第三个元素：
+
+{% raw %}<pre class="Agda"><a id="30766" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#30766" class="Function">_</a> <a id="30768" class="Symbol">:</a> <a id="30770" class="Number">0</a> <a id="30772" href="plfa.Lists.html#30281" class="Function Operator">∈</a> <a id="30774" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">[</a> <a id="30776" class="Number">0</a> <a id="30778" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="30780" class="Number">1</a> <a id="30782" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="30784" class="Number">0</a> <a id="30786" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="30788" class="Number">2</a> <a id="30790" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">]</a>
+<a id="30792" class="Symbol">_</a> <a id="30794" class="Symbol">=</a> <a id="30796" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#29817" class="InductiveConstructor">here</a> <a id="30801" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#182" class="InductiveConstructor">refl</a>
+
+<a id="30807" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#30807" class="Function">_</a> <a id="30809" class="Symbol">:</a> <a id="30811" class="Number">0</a> <a id="30813" href="plfa.Lists.html#30281" class="Function Operator">∈</a> <a id="30815" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">[</a> <a id="30817" class="Number">0</a> <a id="30819" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="30821" class="Number">1</a> <a id="30823" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="30825" class="Number">0</a> <a id="30827" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="30829" class="Number">2</a> <a id="30831" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">]</a>
+<a id="30833" class="Symbol">_</a> <a id="30835" class="Symbol">=</a> <a id="30837" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#29874" class="InductiveConstructor">there</a> <a id="30843" class="Symbol">(</a><a id="30844" href="plfa.Lists.html#29874" class="InductiveConstructor">there</a> <a id="30850" class="Symbol">(</a><a id="30851" href="plfa.Lists.html#29817" class="InductiveConstructor">here</a> <a id="30856" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Equality.html#182" class="InductiveConstructor">refl</a><a id="30860" class="Symbol">))</a>
+</pre>{% endraw %}
+{::comment}
+Further, we can demonstrate that three is not in the list, because
+any possible proof that it is in the list leads to contradiction:
+{:/}
+
+除此之外，我们可以展示三不在列表之中，因为任何它在列表中的证明会推导出矛盾：
+
+{% raw %}<pre class="Agda"><a id="not-in"></a><a id="31063" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#31063" class="Function">not-in</a> <a id="31070" class="Symbol">:</a> <a id="31072" class="Number">3</a> <a id="31074" href="plfa.Lists.html#30351" class="Function Operator">∉</a> <a id="31076" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">[</a> <a id="31078" class="Number">0</a> <a id="31080" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="31082" class="Number">1</a> <a id="31084" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="31086" class="Number">0</a> <a id="31088" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">,</a> <a id="31090" class="Number">2</a> <a id="31092" href="plfa.Lists.html#3911" class="InductiveConstructor Operator">]</a>
+<a id="31094" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#31063" class="Function">not-in</a> <a id="31101" class="Symbol">(</a><a id="31102" href="plfa.Lists.html#29817" class="InductiveConstructor">here</a> <a id="31107" class="Symbol">())</a>
+<a id="31111" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#31063" class="Function">not-in</a> <a id="31118" class="Symbol">(</a><a id="31119" href="plfa.Lists.html#29874" class="InductiveConstructor">there</a> <a id="31125" class="Symbol">(</a><a id="31126" href="plfa.Lists.html#29817" class="InductiveConstructor">here</a> <a id="31131" class="Symbol">()))</a>
+<a id="31136" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#31063" class="Function">not-in</a> <a id="31143" class="Symbol">(</a><a id="31144" href="plfa.Lists.html#29874" class="InductiveConstructor">there</a> <a id="31150" class="Symbol">(</a><a id="31151" href="plfa.Lists.html#29874" class="InductiveConstructor">there</a> <a id="31157" class="Symbol">(</a><a id="31158" href="plfa.Lists.html#29817" class="InductiveConstructor">here</a> <a id="31163" class="Symbol">())))</a>
+<a id="31169" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#31063" class="Function">not-in</a> <a id="31176" class="Symbol">(</a><a id="31177" href="plfa.Lists.html#29874" class="InductiveConstructor">there</a> <a id="31183" class="Symbol">(</a><a id="31184" href="plfa.Lists.html#29874" class="InductiveConstructor">there</a> <a id="31190" class="Symbol">(</a><a id="31191" href="plfa.Lists.html#29874" class="InductiveConstructor">there</a> <a id="31197" class="Symbol">(</a><a id="31198" href="plfa.Lists.html#29817" class="InductiveConstructor">here</a> <a id="31203" class="Symbol">()))))</a>
+<a id="31210" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#31063" class="Function">not-in</a> <a id="31217" class="Symbol">(</a><a id="31218" href="plfa.Lists.html#29874" class="InductiveConstructor">there</a> <a id="31224" class="Symbol">(</a><a id="31225" href="plfa.Lists.html#29874" class="InductiveConstructor">there</a> <a id="31231" class="Symbol">(</a><a id="31232" href="plfa.Lists.html#29874" class="InductiveConstructor">there</a> <a id="31238" class="Symbol">(</a><a id="31239" href="plfa.Lists.html#29874" class="InductiveConstructor">there</a> <a id="31245" class="Symbol">()))))</a>
+</pre>{% endraw %}
+{::comment}
+The five occurrences of `()` attest to the fact that there is no
+possible evidence for `3 ≡ 0`, `3 ≡ 1`, `3 ≡ 0`, `3 ≡ 2`, and
+`3 ∈ []`, respectively.
+{:/}
+
+`()` 出现了五次，分别表示没有 `3 ≡ 0`、 `3 ≡ 1`、 `3 ≡ 0`、 `3 ≡ 2` 和
+`3 ∈ []` 的证明。
+
+{::comment}
+## All and append
+{:/}
+
+## 所有和附加
+
+{::comment}
+A predicate holds for every element of one list appended to another if and
+only if it holds for every element of both lists:
+{:/}
+
+一个谓词对两个附加在一起的列表的每个元素都成立，当且仅当这个谓词对两个列表的每个元素都成立：
+
+{% raw %}<pre class="Agda"><a id="All-++-⇔"></a><a id="31737" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#31737" class="Function">All-++-⇔</a> <a id="31746" class="Symbol">:</a> <a id="31748" class="Symbol">∀</a> <a id="31750" class="Symbol">{</a><a id="31751" href="plfa.Lists.html#31751" class="Bound">A</a> <a id="31753" class="Symbol">:</a> <a id="31755" class="PrimitiveType">Set</a><a id="31758" class="Symbol">}</a> <a id="31760" class="Symbol">{</a><a id="31761" href="plfa.Lists.html#31761" class="Bound">P</a> <a id="31763" class="Symbol">:</a> <a id="31765" href="plfa.Lists.html#31751" class="Bound">A</a> <a id="31767" class="Symbol">→</a> <a id="31769" class="PrimitiveType">Set</a><a id="31772" class="Symbol">}</a> <a id="31774" class="Symbol">(</a><a id="31775" href="plfa.Lists.html#31775" class="Bound">xs</a> <a id="31778" href="plfa.Lists.html#31778" class="Bound">ys</a> <a id="31781" class="Symbol">:</a> <a id="31783" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="31788" href="plfa.Lists.html#31751" class="Bound">A</a><a id="31789" class="Symbol">)</a> <a id="31791" class="Symbol">→</a>
+  <a id="31795" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#27620" class="Datatype">All</a> <a id="31799" href="plfa.Lists.html#31761" class="Bound">P</a> <a id="31801" class="Symbol">(</a><a id="31802" href="plfa.Lists.html#31775" class="Bound">xs</a> <a id="31805" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="31808" href="plfa.Lists.html#31778" class="Bound">ys</a><a id="31810" class="Symbol">)</a> <a id="31812" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Isomorphism.md %}{% raw %}#14837" class="Record Operator">⇔</a> <a id="31814" class="Symbol">(</a><a id="31815" href="plfa.Lists.html#27620" class="Datatype">All</a> <a id="31819" href="plfa.Lists.html#31761" class="Bound">P</a> <a id="31821" href="plfa.Lists.html#31775" class="Bound">xs</a> <a id="31824" href="https://agda.github.io/agda-stdlib/v1.1/Data.Product.html#1162" class="Function Operator">×</a> <a id="31826" href="plfa.Lists.html#27620" class="Datatype">All</a> <a id="31830" href="plfa.Lists.html#31761" class="Bound">P</a> <a id="31832" href="plfa.Lists.html#31778" class="Bound">ys</a><a id="31834" class="Symbol">)</a>
+<a id="31836" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#31737" class="Function">All-++-⇔</a> <a id="31845" href="plfa.Lists.html#31845" class="Bound">xs</a> <a id="31848" href="plfa.Lists.html#31848" class="Bound">ys</a> <a id="31851" class="Symbol">=</a>
+  <a id="31855" class="Keyword">record</a>
+    <a id="31866" class="Symbol">{</a> <a id="31868" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Isomorphism.md %}{% raw %}#14877" class="Field">to</a>       <a id="31877" class="Symbol">=</a>  <a id="31880" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#31935" class="Function">to</a> <a id="31883" href="plfa.Lists.html#31845" class="Bound">xs</a> <a id="31886" href="plfa.Lists.html#31848" class="Bound">ys</a>
+    <a id="31893" class="Symbol">;</a> <a id="31895" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Isomorphism.md %}{% raw %}#14894" class="Field">from</a>     <a id="31904" class="Symbol">=</a>  <a id="31907" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#32160" class="Function">from</a> <a id="31912" href="plfa.Lists.html#31845" class="Bound">xs</a> <a id="31915" href="plfa.Lists.html#31848" class="Bound">ys</a>
+    <a id="31922" class="Symbol">}</a>
+  <a id="31926" class="Keyword">where</a>
+
+  <a id="31935" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#31935" class="Function">to</a> <a id="31938" class="Symbol">:</a> <a id="31940" class="Symbol">∀</a> <a id="31942" class="Symbol">{</a><a id="31943" href="plfa.Lists.html#31943" class="Bound">A</a> <a id="31945" class="Symbol">:</a> <a id="31947" class="PrimitiveType">Set</a><a id="31950" class="Symbol">}</a> <a id="31952" class="Symbol">{</a><a id="31953" href="plfa.Lists.html#31953" class="Bound">P</a> <a id="31955" class="Symbol">:</a> <a id="31957" href="plfa.Lists.html#31943" class="Bound">A</a> <a id="31959" class="Symbol">→</a> <a id="31961" class="PrimitiveType">Set</a><a id="31964" class="Symbol">}</a> <a id="31966" class="Symbol">(</a><a id="31967" href="plfa.Lists.html#31967" class="Bound">xs</a> <a id="31970" href="plfa.Lists.html#31970" class="Bound">ys</a> <a id="31973" class="Symbol">:</a> <a id="31975" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="31980" href="plfa.Lists.html#31943" class="Bound">A</a><a id="31981" class="Symbol">)</a> <a id="31983" class="Symbol">→</a>
+    <a id="31989" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#27620" class="Datatype">All</a> <a id="31993" href="plfa.Lists.html#31953" class="Bound">P</a> <a id="31995" class="Symbol">(</a><a id="31996" href="plfa.Lists.html#31967" class="Bound">xs</a> <a id="31999" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="32002" href="plfa.Lists.html#31970" class="Bound">ys</a><a id="32004" class="Symbol">)</a> <a id="32006" class="Symbol">→</a> <a id="32008" class="Symbol">(</a><a id="32009" href="plfa.Lists.html#27620" class="Datatype">All</a> <a id="32013" href="plfa.Lists.html#31953" class="Bound">P</a> <a id="32015" href="plfa.Lists.html#31967" class="Bound">xs</a> <a id="32018" href="https://agda.github.io/agda-stdlib/v1.1/Data.Product.html#1162" class="Function Operator">×</a> <a id="32020" href="plfa.Lists.html#27620" class="Datatype">All</a> <a id="32024" href="plfa.Lists.html#31953" class="Bound">P</a> <a id="32026" href="plfa.Lists.html#31970" class="Bound">ys</a><a id="32028" class="Symbol">)</a>
+  <a id="32032" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#31935" class="Function">to</a> <a id="32035" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="32038" href="plfa.Lists.html#32038" class="Bound">ys</a> <a id="32041" href="plfa.Lists.html#32041" class="Bound">Pys</a> <a id="32045" class="Symbol">=</a> <a id="32047" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">⟨</a> <a id="32049" href="plfa.Lists.html#27671" class="InductiveConstructor">[]</a> <a id="32052" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">,</a> <a id="32054" href="plfa.Lists.html#32041" class="Bound">Pys</a> <a id="32058" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">⟩</a>
+  <a id="32062" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#31935" class="Function">to</a> <a id="32065" class="Symbol">(</a><a id="32066" href="plfa.Lists.html#32066" class="Bound">x</a> <a id="32068" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="32070" href="plfa.Lists.html#32070" class="Bound">xs</a><a id="32072" class="Symbol">)</a> <a id="32074" href="plfa.Lists.html#32074" class="Bound">ys</a> <a id="32077" class="Symbol">(</a><a id="32078" href="plfa.Lists.html#32078" class="Bound">Px</a> <a id="32081" href="plfa.Lists.html#27688" class="InductiveConstructor Operator">∷</a> <a id="32083" href="plfa.Lists.html#32083" class="Bound">Pxs++ys</a><a id="32090" class="Symbol">)</a> <a id="32092" class="Keyword">with</a> <a id="32097" href="plfa.Lists.html#31935" class="Function">to</a> <a id="32100" href="plfa.Lists.html#32070" class="Bound">xs</a> <a id="32103" href="plfa.Lists.html#32074" class="Bound">ys</a> <a id="32106" href="plfa.Lists.html#32083" class="Bound">Pxs++ys</a>
+  <a id="32116" class="Symbol">...</a> <a id="32120" class="Symbol">|</a> <a id="32122" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">⟨</a> <a id="32124" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#32124" class="Bound">Pxs</a> <a id="32128" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">,</a> <a id="32130" href="plfa.Lists.html#32130" class="Bound">Pys</a> <a id="32134" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">⟩</a> <a id="32136" class="Symbol">=</a> <a id="32138" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">⟨</a> <a id="32140" class="Bound">Px</a> <a id="32143" href="plfa.Lists.html#27688" class="InductiveConstructor Operator">∷</a> <a id="32145" href="plfa.Lists.html#32124" class="Bound">Pxs</a> <a id="32149" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">,</a> <a id="32151" href="plfa.Lists.html#32130" class="Bound">Pys</a> <a id="32155" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">⟩</a>
+
+  <a id="32160" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#32160" class="Function">from</a> <a id="32165" class="Symbol">:</a> <a id="32167" class="Symbol">∀</a> <a id="32169" class="Symbol">{</a> <a id="32171" href="plfa.Lists.html#32171" class="Bound">A</a> <a id="32173" class="Symbol">:</a> <a id="32175" class="PrimitiveType">Set</a><a id="32178" class="Symbol">}</a> <a id="32180" class="Symbol">{</a><a id="32181" href="plfa.Lists.html#32181" class="Bound">P</a> <a id="32183" class="Symbol">:</a> <a id="32185" href="plfa.Lists.html#32171" class="Bound">A</a> <a id="32187" class="Symbol">→</a> <a id="32189" class="PrimitiveType">Set</a><a id="32192" class="Symbol">}</a> <a id="32194" class="Symbol">(</a><a id="32195" href="plfa.Lists.html#32195" class="Bound">xs</a> <a id="32198" href="plfa.Lists.html#32198" class="Bound">ys</a> <a id="32201" class="Symbol">:</a> <a id="32203" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="32208" href="plfa.Lists.html#32171" class="Bound">A</a><a id="32209" class="Symbol">)</a> <a id="32211" class="Symbol">→</a>
+    <a id="32217" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#27620" class="Datatype">All</a> <a id="32221" href="plfa.Lists.html#32181" class="Bound">P</a> <a id="32223" href="plfa.Lists.html#32195" class="Bound">xs</a> <a id="32226" href="https://agda.github.io/agda-stdlib/v1.1/Data.Product.html#1162" class="Function Operator">×</a> <a id="32228" href="plfa.Lists.html#27620" class="Datatype">All</a> <a id="32232" href="plfa.Lists.html#32181" class="Bound">P</a> <a id="32234" href="plfa.Lists.html#32198" class="Bound">ys</a> <a id="32237" class="Symbol">→</a> <a id="32239" href="plfa.Lists.html#27620" class="Datatype">All</a> <a id="32243" href="plfa.Lists.html#32181" class="Bound">P</a> <a id="32245" class="Symbol">(</a><a id="32246" href="plfa.Lists.html#32195" class="Bound">xs</a> <a id="32249" href="plfa.Lists.html#4651" class="Function Operator">++</a> <a id="32252" href="plfa.Lists.html#32198" class="Bound">ys</a><a id="32254" class="Symbol">)</a>
+  <a id="32258" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#32160" class="Function">from</a> <a id="32263" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a> <a id="32266" href="plfa.Lists.html#32266" class="Bound">ys</a> <a id="32269" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">⟨</a> <a id="32271" href="plfa.Lists.html#27671" class="InductiveConstructor">[]</a> <a id="32274" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">,</a> <a id="32276" href="plfa.Lists.html#32276" class="Bound">Pys</a> <a id="32280" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">⟩</a> <a id="32282" class="Symbol">=</a> <a id="32284" href="plfa.Lists.html#32276" class="Bound">Pys</a>
+  <a id="32290" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#32160" class="Function">from</a> <a id="32295" class="Symbol">(</a><a id="32296" href="plfa.Lists.html#32296" class="Bound">x</a> <a id="32298" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="32300" href="plfa.Lists.html#32300" class="Bound">xs</a><a id="32302" class="Symbol">)</a> <a id="32304" href="plfa.Lists.html#32304" class="Bound">ys</a> <a id="32307" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">⟨</a> <a id="32309" href="plfa.Lists.html#32309" class="Bound">Px</a> <a id="32312" href="plfa.Lists.html#27688" class="InductiveConstructor Operator">∷</a> <a id="32314" href="plfa.Lists.html#32314" class="Bound">Pxs</a> <a id="32318" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">,</a> <a id="32320" href="plfa.Lists.html#32320" class="Bound">Pys</a> <a id="32324" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">⟩</a> <a id="32326" class="Symbol">=</a>  <a id="32329" href="plfa.Lists.html#32309" class="Bound">Px</a> <a id="32332" href="plfa.Lists.html#27688" class="InductiveConstructor Operator">∷</a> <a id="32334" href="plfa.Lists.html#32160" class="Function">from</a> <a id="32339" href="plfa.Lists.html#32300" class="Bound">xs</a> <a id="32342" href="plfa.Lists.html#32304" class="Bound">ys</a> <a id="32345" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">⟨</a> <a id="32347" href="plfa.Lists.html#32314" class="Bound">Pxs</a> <a id="32351" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">,</a> <a id="32353" href="plfa.Lists.html#32320" class="Bound">Pys</a> <a id="32357" href="Agda.Builtin.Sigma.html#209" class="InductiveConstructor Operator">⟩</a>
+</pre>{% endraw %}
+{::comment}
+#### Exercise `Any-++-⇔` (recommended)
+{:/}
+
+#### 练习 `Any-++-⇔` （推荐）
+
+{::comment}
+Prove a result similar to `All-++-⇔`, but with `Any` in place of `All`, and a suitable
+replacement for `_×_`.  As a consequence, demonstrate an equivalence relating
+`_∈_` and `_++_`.
+{:/}
+使用 `Any` 代替 `All` 与一个合适的 `_×_` 的替代，证明一个类似于 `All-++-⇔` 的结果。
+作为结论，展示关联 `_∈_` 和 `_++_` 的一个等价关系。
+
+{::comment}
+{% raw %}<pre class="Agda"><a id="32756" class="Comment">-- Your code goes here</a>
+</pre>{% endraw %}{:/}
+
+{% raw %}<pre class="Agda"><a id="32793" class="Comment">-- 请将代码写在此处。</a>
+</pre>{% endraw %}
+{::comment}
+#### Exercise `All-++-≃` (stretch)
+{:/}
+
+#### 练习 `All-++-≃` （延伸）
+
+{::comment}
+Show that the equivalence `All-++-⇔` can be extended to an isomorphism.
+{:/}
+
+证明 `All-++-⇔` 的等价关系可以被扩展至一个同构关系。
+
+{::comment}
+{% raw %}<pre class="Agda"><a id="33029" class="Comment">-- Your code goes here</a>
+</pre>{% endraw %}{:/}
+
+{% raw %}<pre class="Agda"><a id="33066" class="Comment">-- 请将代码写在此处。</a>
+</pre>{% endraw %}
+{::comment}
+#### Exercise `¬Any≃All¬` (stretch)
+{:/}
+
+#### 练习 `¬Any≃All¬` （拓展）
+
+{::comment}
+First generalise composition to arbitrary levels, using
+[universe polymorphism][plfa.Equality#unipoly]:
+{:/}
+
+首先我们将函数组合使用[全体多态][plfa.Equality#unipoly]推广到任意等级：
+{% raw %}<pre class="Agda"><a id="_∘′_"></a><a id="33339" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#33339" class="Function Operator">_∘′_</a> <a id="33344" class="Symbol">:</a> <a id="33346" class="Symbol">∀</a> <a id="33348" class="Symbol">{</a><a id="33349" href="plfa.Lists.html#33349" class="Bound">ℓ₁</a> <a id="33352" href="plfa.Lists.html#33352" class="Bound">ℓ₂</a> <a id="33355" href="plfa.Lists.html#33355" class="Bound">ℓ₃</a> <a id="33358" class="Symbol">:</a> <a id="33360" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Primitive.html#408" class="Postulate">Level</a><a id="33365" class="Symbol">}</a> <a id="33367" class="Symbol">{</a><a id="33368" href="plfa.Lists.html#33368" class="Bound">A</a> <a id="33370" class="Symbol">:</a> <a id="33372" class="PrimitiveType">Set</a> <a id="33376" href="plfa.Lists.html#33349" class="Bound">ℓ₁</a><a id="33378" class="Symbol">}</a> <a id="33380" class="Symbol">{</a><a id="33381" href="plfa.Lists.html#33381" class="Bound">B</a> <a id="33383" class="Symbol">:</a> <a id="33385" class="PrimitiveType">Set</a> <a id="33389" href="plfa.Lists.html#33352" class="Bound">ℓ₂</a><a id="33391" class="Symbol">}</a> <a id="33393" class="Symbol">{</a><a id="33394" href="plfa.Lists.html#33394" class="Bound">C</a> <a id="33396" class="Symbol">:</a> <a id="33398" class="PrimitiveType">Set</a> <a id="33402" href="plfa.Lists.html#33355" class="Bound">ℓ₃</a><a id="33404" class="Symbol">}</a>
+  <a id="33408" class="Symbol">→</a> <a id="33410" class="Symbol">(</a><a id="33411" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#33381" class="Bound">B</a> <a id="33413" class="Symbol">→</a> <a id="33415" href="plfa.Lists.html#33394" class="Bound">C</a><a id="33416" class="Symbol">)</a> <a id="33418" class="Symbol">→</a> <a id="33420" class="Symbol">(</a><a id="33421" href="plfa.Lists.html#33368" class="Bound">A</a> <a id="33423" class="Symbol">→</a> <a id="33425" href="plfa.Lists.html#33381" class="Bound">B</a><a id="33426" class="Symbol">)</a> <a id="33428" class="Symbol">→</a> <a id="33430" href="plfa.Lists.html#33368" class="Bound">A</a> <a id="33432" class="Symbol">→</a> <a id="33434" href="plfa.Lists.html#33394" class="Bound">C</a>
+<a id="33436" class="Symbol">(</a><a id="33437" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#33437" class="Bound">g</a> <a id="33439" href="plfa.Lists.html#33339" class="Function Operator">∘′</a> <a id="33442" href="plfa.Lists.html#33442" class="Bound">f</a><a id="33443" class="Symbol">)</a> <a id="33445" href="plfa.Lists.html#33445" class="Bound">x</a>  <a id="33448" class="Symbol">=</a>  <a id="33451" href="plfa.Lists.html#33437" class="Bound">g</a> <a id="33453" class="Symbol">(</a><a id="33454" href="plfa.Lists.html#33442" class="Bound">f</a> <a id="33456" href="plfa.Lists.html#33445" class="Bound">x</a><a id="33457" class="Symbol">)</a>
+</pre>{% endraw %}
+{::comment}
+Show that `Any` and `All` satisfy a version of De Morgan's Law:
+{:/}
+
+证明 `Any` 和 `All` 满足某个形式的德摩根定律：
+
+{% raw %}<pre class="Agda"><a id="33582" class="Keyword">postulate</a>
+  <a id="¬Any≃All¬"></a><a id="33594" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#33594" class="Postulate">¬Any≃All¬</a> <a id="33604" class="Symbol">:</a> <a id="33606" class="Symbol">∀</a> <a id="33608" class="Symbol">{</a><a id="33609" href="plfa.Lists.html#33609" class="Bound">A</a> <a id="33611" class="Symbol">:</a> <a id="33613" class="PrimitiveType">Set</a><a id="33616" class="Symbol">}</a> <a id="33618" class="Symbol">(</a><a id="33619" href="plfa.Lists.html#33619" class="Bound">P</a> <a id="33621" class="Symbol">:</a> <a id="33623" href="plfa.Lists.html#33609" class="Bound">A</a> <a id="33625" class="Symbol">→</a> <a id="33627" class="PrimitiveType">Set</a><a id="33630" class="Symbol">)</a> <a id="33632" class="Symbol">(</a><a id="33633" href="plfa.Lists.html#33633" class="Bound">xs</a> <a id="33636" class="Symbol">:</a> <a id="33638" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="33643" href="plfa.Lists.html#33609" class="Bound">A</a><a id="33644" class="Symbol">)</a>
+    <a id="33650" class="Symbol">→</a> <a id="33652" class="Symbol">(</a><a id="33653" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#535" class="Function Operator">¬_</a> <a id="33656" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#33339" class="Function Operator">∘′</a> <a id="33659" href="plfa.Lists.html#29766" class="Datatype">Any</a> <a id="33663" href="plfa.Lists.html#33619" class="Bound">P</a><a id="33664" class="Symbol">)</a> <a id="33666" href="plfa.Lists.html#33633" class="Bound">xs</a> <a id="33669" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Isomorphism.md %}{% raw %}#5424" class="Record Operator">≃</a> <a id="33671" href="plfa.Lists.html#27620" class="Datatype">All</a> <a id="33675" class="Symbol">(</a><a id="33676" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#535" class="Function Operator">¬_</a> <a id="33679" href="plfa.Lists.html#33339" class="Function Operator">∘′</a> <a id="33682" href="plfa.Lists.html#33619" class="Bound">P</a><a id="33683" class="Symbol">)</a> <a id="33685" href="plfa.Lists.html#33633" class="Bound">xs</a>
+</pre>{% endraw %}
+{::comment}
+Do we also have the following?
+{:/}
+
+下列命题是否成立？
+
+{% raw %}<pre class="Agda"><a id="33757" class="Keyword">postulate</a>
+  <a id="¬All≃Any¬"></a><a id="33769" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#33769" class="Postulate">¬All≃Any¬</a> <a id="33779" class="Symbol">:</a> <a id="33781" class="Symbol">∀</a> <a id="33783" class="Symbol">{</a><a id="33784" href="plfa.Lists.html#33784" class="Bound">A</a> <a id="33786" class="Symbol">:</a> <a id="33788" class="PrimitiveType">Set</a><a id="33791" class="Symbol">}</a> <a id="33793" class="Symbol">(</a><a id="33794" href="plfa.Lists.html#33794" class="Bound">P</a> <a id="33796" class="Symbol">:</a> <a id="33798" href="plfa.Lists.html#33784" class="Bound">A</a> <a id="33800" class="Symbol">→</a> <a id="33802" class="PrimitiveType">Set</a><a id="33805" class="Symbol">)</a> <a id="33807" class="Symbol">(</a><a id="33808" href="plfa.Lists.html#33808" class="Bound">xs</a> <a id="33811" class="Symbol">:</a> <a id="33813" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="33818" href="plfa.Lists.html#33784" class="Bound">A</a><a id="33819" class="Symbol">)</a>
+    <a id="33825" class="Symbol">→</a> <a id="33827" class="Symbol">(</a><a id="33828" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#535" class="Function Operator">¬_</a> <a id="33831" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#33339" class="Function Operator">∘′</a> <a id="33834" href="plfa.Lists.html#27620" class="Datatype">All</a> <a id="33838" href="plfa.Lists.html#33794" class="Bound">P</a><a id="33839" class="Symbol">)</a> <a id="33841" href="plfa.Lists.html#33808" class="Bound">xs</a> <a id="33844" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Isomorphism.md %}{% raw %}#5424" class="Record Operator">≃</a> <a id="33846" href="plfa.Lists.html#29766" class="Datatype">Any</a> <a id="33850" class="Symbol">(</a><a id="33851" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#535" class="Function Operator">¬_</a> <a id="33854" href="plfa.Lists.html#33339" class="Function Operator">∘′</a> <a id="33857" href="plfa.Lists.html#33794" class="Bound">P</a><a id="33858" class="Symbol">)</a> <a id="33860" href="plfa.Lists.html#33808" class="Bound">xs</a>
+</pre>{% endraw %}
+{::comment}
+If so, prove; if not, explain why.
+{:/}
+
+如果成立，请证明；如果不成立，请解释原因。
+
+
+{::comment}
+## Decidability of All
+{:/}
+
+## 所有的可判定性
+
+{::comment}
+If we consider a predicate as a function that yields a boolean,
+it is easy to define an analogue of `All`, which returns true if
+a given predicate returns true for every element of a list:
+{:/}
+
+如果我们将一个谓词看作一个返回布尔值的函数，那么我们可以简单的定义一个类似于 `All`
+的函数，其当给定谓词对于列表每个元素返回真时返回真：
+
+{% raw %}<pre class="Agda"><a id="all"></a><a id="34282" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#34282" class="Function">all</a> <a id="34286" class="Symbol">:</a> <a id="34288" class="Symbol">∀</a> <a id="34290" class="Symbol">{</a><a id="34291" href="plfa.Lists.html#34291" class="Bound">A</a> <a id="34293" class="Symbol">:</a> <a id="34295" class="PrimitiveType">Set</a><a id="34298" class="Symbol">}</a> <a id="34300" class="Symbol">→</a> <a id="34302" class="Symbol">(</a><a id="34303" href="plfa.Lists.html#34291" class="Bound">A</a> <a id="34305" class="Symbol">→</a> <a id="34307" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Bool.html#135" class="Datatype">Bool</a><a id="34311" class="Symbol">)</a> <a id="34313" class="Symbol">→</a> <a id="34315" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="34320" href="plfa.Lists.html#34291" class="Bound">A</a> <a id="34322" class="Symbol">→</a> <a id="34324" href="Agda.Builtin.Bool.html#135" class="Datatype">Bool</a>
+<a id="34329" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#34282" class="Function">all</a> <a id="34333" href="plfa.Lists.html#34333" class="Bound">p</a>  <a id="34336" class="Symbol">=</a>  <a id="34339" href="plfa.Lists.html#20195" class="Function">foldr</a> <a id="34345" href="https://agda.github.io/agda-stdlib/v1.1/Data.Bool.Base.html#1015" class="Function Operator">_∧_</a> <a id="34349" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.Bool.html#160" class="InductiveConstructor">true</a> <a id="34354" href="https://agda.github.io/agda-stdlib/v1.1/Function.html#1099" class="Function Operator">∘</a> <a id="34356" href="plfa.Lists.html#16929" class="Function">map</a> <a id="34360" href="plfa.Lists.html#34333" class="Bound">p</a>
+</pre>{% endraw %}
+{::comment}
+The function can be written in a particularly compact style by
+using the higher-order functions `map` and `foldr`.
+{:/}
+
+我们可以使用高阶函数 `map` 和 `foldr` 来简洁地写出这个函数。
+
+{::comment}
+As one would hope, if we replace booleans by decidables there is again
+an analogue of `All`.  First, return to the notion of a predicate `P` as
+a function of type `A → Set`, taking a value `x` of type `A` into evidence
+`P x` that a property holds for `x`.  Say that a predicate `P` is _decidable_
+if we have a function that for a given `x` can decide `P x`:
+{:/}
+
+正如所希望的那样，如果我们将布尔值替换成可判定值，这与 `All` 是相似的。首先，回到将 `P`
+当作一个类型为 `A → Set` 的函数的概念，将一个类型为 `A` 的值 `x` 转换成 `P x` 对 `x` 成立
+的证明。我们成 `P` 为**可判定的**（Decidable），如果我们有一个函数，其在给定 `x` 时能够判定 `P x`：
+
+{% raw %}<pre class="Agda"><a id="Decidable"></a><a id="35099" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#35099" class="Function">Decidable</a> <a id="35109" class="Symbol">:</a> <a id="35111" class="Symbol">∀</a> <a id="35113" class="Symbol">{</a><a id="35114" href="plfa.Lists.html#35114" class="Bound">A</a> <a id="35116" class="Symbol">:</a> <a id="35118" class="PrimitiveType">Set</a><a id="35121" class="Symbol">}</a> <a id="35123" class="Symbol">→</a> <a id="35125" class="Symbol">(</a><a id="35126" href="plfa.Lists.html#35114" class="Bound">A</a> <a id="35128" class="Symbol">→</a> <a id="35130" class="PrimitiveType">Set</a><a id="35133" class="Symbol">)</a> <a id="35135" class="Symbol">→</a> <a id="35137" class="PrimitiveType">Set</a>
+<a id="35141" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#35099" class="Function">Decidable</a> <a id="35151" class="Symbol">{</a><a id="35152" href="plfa.Lists.html#35152" class="Bound">A</a><a id="35153" class="Symbol">}</a> <a id="35155" href="plfa.Lists.html#35155" class="Bound">P</a>  <a id="35158" class="Symbol">=</a>  <a id="35161" class="Symbol">∀</a> <a id="35163" class="Symbol">(</a><a id="35164" href="plfa.Lists.html#35164" class="Bound">x</a> <a id="35166" class="Symbol">:</a> <a id="35168" href="plfa.Lists.html#35152" class="Bound">A</a><a id="35169" class="Symbol">)</a> <a id="35171" class="Symbol">→</a> <a id="35173" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#605" class="Datatype">Dec</a> <a id="35177" class="Symbol">(</a><a id="35178" href="plfa.Lists.html#35155" class="Bound">P</a> <a id="35180" href="plfa.Lists.html#35164" class="Bound">x</a><a id="35181" class="Symbol">)</a>
+</pre>{% endraw %}
+{::comment}
+Then if predicate `P` is decidable, it is also decidable whether every
+element of a list satisfies the predicate:
+{:/}
+
+那么当谓词 `P` 可判定时，我们亦可判定列表中的每一个元素是否满足这个谓词：
+{% raw %}<pre class="Agda"><a id="All?"></a><a id="35364" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#35364" class="Function">All?</a> <a id="35369" class="Symbol">:</a> <a id="35371" class="Symbol">∀</a> <a id="35373" class="Symbol">{</a><a id="35374" href="plfa.Lists.html#35374" class="Bound">A</a> <a id="35376" class="Symbol">:</a> <a id="35378" class="PrimitiveType">Set</a><a id="35381" class="Symbol">}</a> <a id="35383" class="Symbol">{</a><a id="35384" href="plfa.Lists.html#35384" class="Bound">P</a> <a id="35386" class="Symbol">:</a> <a id="35388" href="plfa.Lists.html#35374" class="Bound">A</a> <a id="35390" class="Symbol">→</a> <a id="35392" class="PrimitiveType">Set</a><a id="35395" class="Symbol">}</a> <a id="35397" class="Symbol">→</a> <a id="35399" href="plfa.Lists.html#35099" class="Function">Decidable</a> <a id="35409" href="plfa.Lists.html#35384" class="Bound">P</a> <a id="35411" class="Symbol">→</a> <a id="35413" href="plfa.Lists.html#35099" class="Function">Decidable</a> <a id="35423" class="Symbol">(</a><a id="35424" href="plfa.Lists.html#27620" class="Datatype">All</a> <a id="35428" href="plfa.Lists.html#35384" class="Bound">P</a><a id="35429" class="Symbol">)</a>
+<a id="35431" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#35364" class="Function">All?</a> <a id="35436" href="plfa.Lists.html#35436" class="Bound">P?</a> <a id="35439" href="plfa.Lists.html#1313" class="InductiveConstructor">[]</a>                                 <a id="35474" class="Symbol">=</a>  <a id="35477" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#641" class="InductiveConstructor">yes</a> <a id="35481" href="plfa.Lists.html#27671" class="InductiveConstructor">[]</a>
+<a id="35484" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#35364" class="Function">All?</a> <a id="35489" href="plfa.Lists.html#35489" class="Bound">P?</a> <a id="35492" class="Symbol">(</a><a id="35493" href="plfa.Lists.html#35493" class="Bound">x</a> <a id="35495" href="plfa.Lists.html#1328" class="InductiveConstructor Operator">∷</a> <a id="35497" href="plfa.Lists.html#35497" class="Bound">xs</a><a id="35499" class="Symbol">)</a> <a id="35501" class="Keyword">with</a> <a id="35506" href="plfa.Lists.html#35489" class="Bound">P?</a> <a id="35509" href="plfa.Lists.html#35493" class="Bound">x</a>   <a id="35513" class="Symbol">|</a> <a id="35515" href="plfa.Lists.html#35364" class="Function">All?</a> <a id="35520" href="plfa.Lists.html#35489" class="Bound">P?</a> <a id="35523" href="plfa.Lists.html#35497" class="Bound">xs</a>
+<a id="35526" class="Symbol">...</a>                 <a id="35546" class="Symbol">|</a> <a id="35548" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#641" class="InductiveConstructor">yes</a> <a id="35552" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#35552" class="Bound">Px</a> <a id="35555" class="Symbol">|</a> <a id="35557" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#641" class="InductiveConstructor">yes</a> <a id="35561" href="plfa.Lists.html#35561" class="Bound">Pxs</a>     <a id="35569" class="Symbol">=</a>  <a id="35572" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#641" class="InductiveConstructor">yes</a> <a id="35576" class="Symbol">(</a><a id="35577" href="plfa.Lists.html#35552" class="Bound">Px</a> <a id="35580" href="plfa.Lists.html#27688" class="InductiveConstructor Operator">∷</a> <a id="35582" href="plfa.Lists.html#35561" class="Bound">Pxs</a><a id="35585" class="Symbol">)</a>
+<a id="35587" class="Symbol">...</a>                 <a id="35607" class="Symbol">|</a> <a id="35609" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#668" class="InductiveConstructor">no</a> <a id="35612" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#35612" class="Bound">¬Px</a> <a id="35616" class="Symbol">|</a> <a id="35618" class="Symbol">_</a>           <a id="35630" class="Symbol">=</a>  <a id="35633" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#668" class="InductiveConstructor">no</a> <a id="35636" class="Symbol">λ{</a> <a id="35639" class="Symbol">(</a><a id="35640" href="plfa.Lists.html#35640" class="Bound">Px</a> <a id="35643" href="plfa.Lists.html#27688" class="InductiveConstructor Operator">∷</a> <a id="35645" href="plfa.Lists.html#35645" class="Bound">Pxs</a><a id="35648" class="Symbol">)</a> <a id="35650" class="Symbol">→</a> <a id="35652" href="plfa.Lists.html#35612" class="Bound">¬Px</a> <a id="35656" href="plfa.Lists.html#35640" class="Bound">Px</a>   <a id="35661" class="Symbol">}</a>
+<a id="35663" class="CatchallClause Symbol">...</a><a id="35666" class="CatchallClause">                 </a><a id="35683" class="CatchallClause Symbol">|</a><a id="35684" class="CatchallClause"> </a><a id="35685" class="CatchallClause Symbol">_</a><a id="35686" class="CatchallClause">      </a><a id="35692" class="CatchallClause Symbol">|</a><a id="35693" class="CatchallClause"> </a><a id="35694" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#668" class="CatchallClause InductiveConstructor">no</a><a id="35696" class="CatchallClause"> </a><a id="35697" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#35697" class="CatchallClause Bound">¬Pxs</a>     <a id="35706" class="Symbol">=</a>  <a id="35709" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Nullary.html#668" class="InductiveConstructor">no</a> <a id="35712" class="Symbol">λ{</a> <a id="35715" class="Symbol">(</a><a id="35716" href="plfa.Lists.html#35716" class="Bound">Px</a> <a id="35719" href="plfa.Lists.html#27688" class="InductiveConstructor Operator">∷</a> <a id="35721" href="plfa.Lists.html#35721" class="Bound">Pxs</a><a id="35724" class="Symbol">)</a> <a id="35726" class="Symbol">→</a> <a id="35728" href="plfa.Lists.html#35697" class="Bound">¬Pxs</a> <a id="35733" href="plfa.Lists.html#35721" class="Bound">Pxs</a> <a id="35737" class="Symbol">}</a>
+</pre>{% endraw %}
+{::comment}
+If the list is empty, then trivially `P` holds for every element of
+the list.  Otherwise, the structure of the proof is similar to that
+showing that the conjunction of two decidable propositions is itself
+decidable, using `_∷_` rather than `⟨_,_⟩` to combine the evidence for
+the head and tail of the list.
+{:/}
+
+如果列表为空，那么 `P` 显然对列表的每个元素成立。
+否则，证明的结构与两个可判定的命题是可判定的证明相似，不过我们使用 `_∷_` 而不是 `⟨_,_⟩`
+来整合头元素和尾列表的证明。
+
+
+{::comment}
+#### Exercise `any?` (stretch)
+{:/}
+
+#### 练习 `any?` （延伸）
+
+{::comment}
+Just as `All` has analogues `all` and `All?` which determine whether a
+predicate holds for every element of a list, so does `Any` have
+analogues `any` and `Any?` which determine whether a predicate holds
+for some element of a list.  Give their definitions.
+{:/}
+
+正如 `All` 有类似的 `all` 和 `All?` 形式，来判断列表的每个元素是否满足给定的谓词，
+那么 `Any` 也有类似的 `any` 和 `Any?` 形式，来判断列表的一些元素是否满足给定的谓词。
+给出它们的定义。
+
+{::comment}
+{% raw %}<pre class="Agda"><a id="36644" class="Comment">-- Your code goes here</a>
+</pre>{% endraw %}{:/}
+
+{% raw %}<pre class="Agda"><a id="36681" class="Comment">-- 请将代码写在此处。</a>
+</pre>{% endraw %}
+
+{::comment}
+#### Exercise `All-∀`
+{:/}
+
+#### 练习 `All-∀`
+
+{::comment}
+Show that `All P xs` is isomorphic to `∀ {x} → x ∈ xs → P x`.
+{:/}
+
+证明 `All P xs` 与 `∀ {x} → x ∈ xs → P x` 同构。
+
+{::comment}
+{% raw %}<pre class="Agda"><a id="36897" class="Comment">-- You code goes here</a>
+</pre>{% endraw %}{:/}
+
+{% raw %}<pre class="Agda"><a id="36933" class="Comment">-- 请将代码写在此处。</a>
+</pre>{% endraw %}
+
+{::comment}
+#### Exercise `Any-∃`
+{:/}
+
+#### 练习 `Any-∃`
+
+{::comment}
+Show that `Any P xs` is isomorphic to `∃[ x ∈ xs ] P x`.
+{:/}
+
+证明 `Any P xs` 与 `∃[ x ∈ xs ] P x` 同构。
+
+{::comment}
+{% raw %}<pre class="Agda"><a id="37139" class="Comment">-- You code goes here</a>
+</pre>{% endraw %}{:/}
+
+{% raw %}<pre class="Agda"><a id="37175" class="Comment">-- 请将代码写在此处。</a>
+</pre>{% endraw %}
+
+{::comment}
+#### Exercise `filter?` (stretch)
+{:/}
+
+#### 练习 `filter?` （延伸）
+
+{::comment}
+Define the following variant of the traditional `filter` function on lists,
+which given a decidable predicate and a list returns all elements of the
+list satisfying the predicate:
+{:/}
+
+定义下面给出的列表 `filter` 函数的变种，给定一个可判定的谓词和一个列表，返回列表中所有满足
+谓词的元素：
+
+{% raw %}<pre class="Agda"><a id="37532" class="Keyword">postulate</a>
+  <a id="filter?"></a><a id="37544" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#37544" class="Postulate">filter?</a> <a id="37552" class="Symbol">:</a> <a id="37554" class="Symbol">∀</a> <a id="37556" class="Symbol">{</a><a id="37557" href="plfa.Lists.html#37557" class="Bound">A</a> <a id="37559" class="Symbol">:</a> <a id="37561" class="PrimitiveType">Set</a><a id="37564" class="Symbol">}</a> <a id="37566" class="Symbol">{</a><a id="37567" href="plfa.Lists.html#37567" class="Bound">P</a> <a id="37569" class="Symbol">:</a> <a id="37571" href="plfa.Lists.html#37557" class="Bound">A</a> <a id="37573" class="Symbol">→</a> <a id="37575" class="PrimitiveType">Set</a><a id="37578" class="Symbol">}</a>
+    <a id="37584" class="Symbol">→</a> <a id="37586" class="Symbol">(</a><a id="37587" href="{% endraw %}{{ site.baseurl }}{% link out/plfa/Lists.md %}{% raw %}#37587" class="Bound">P?</a> <a id="37590" class="Symbol">:</a> <a id="37592" href="plfa.Lists.html#35099" class="Function">Decidable</a> <a id="37602" href="plfa.Lists.html#37567" class="Bound">P</a><a id="37603" class="Symbol">)</a> <a id="37605" class="Symbol">→</a> <a id="37607" href="plfa.Lists.html#1284" class="Datatype">List</a> <a id="37612" href="plfa.Lists.html#37557" class="Bound">A</a> <a id="37614" class="Symbol">→</a> <a id="37616" href="https://agda.github.io/agda-stdlib/v1.1/Data.Product.html#1783" class="Function">∃[</a> <a id="37619" href="plfa.Lists.html#37619" class="Bound">ys</a> <a id="37622" href="https://agda.github.io/agda-stdlib/v1.1/Data.Product.html#1783" class="Function">]</a><a id="37623" class="Symbol">(</a> <a id="37625" href="plfa.Lists.html#27620" class="Datatype">All</a> <a id="37629" href="plfa.Lists.html#37567" class="Bound">P</a> <a id="37631" href="plfa.Lists.html#37619" class="Bound">ys</a> <a id="37634" class="Symbol">)</a>
+</pre>{% endraw %}
+
+{::comment}
+## Standard Library
+{:/}
+
+## 标准库
+
+{::comment}
+Definitions similar to those in this chapter can be found in the standard library:
+{:/}
+
+标准库中可以找到与本章节中相似的定义：
+
+{% raw %}<pre class="Agda"><a id="37814" class="Keyword">import</a> <a id="37821" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.html" class="Module">Data.List</a> <a id="37831" class="Keyword">using</a> <a id="37837" class="Symbol">(</a><a id="37838" href="https://agda.github.io/agda-stdlib/v1.1/Agda.Builtin.List.html#121" class="Datatype">List</a><a id="37842" class="Symbol">;</a> <a id="37844" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Base.html#1570" class="Function Operator">_++_</a><a id="37848" class="Symbol">;</a> <a id="37850" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Base.html#4104" class="Function">length</a><a id="37856" class="Symbol">;</a> <a id="37858" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Base.html#8564" class="Function">reverse</a><a id="37865" class="Symbol">;</a> <a id="37867" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Base.html#1304" class="Function">map</a><a id="37870" class="Symbol">;</a> <a id="37872" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Base.html#3432" class="Function">foldr</a><a id="37877" class="Symbol">;</a> <a id="37879" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Base.html#5510" class="Function">downFrom</a><a id="37887" class="Symbol">)</a>
+<a id="37889" class="Keyword">import</a> <a id="37896" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.All.html" class="Module">Data.List.All</a> <a id="37910" class="Keyword">using</a> <a id="37916" class="Symbol">(</a><a id="37917" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Relation.Unary.All.html#1176" class="Datatype">All</a><a id="37920" class="Symbol">;</a> <a id="37922" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Relation.Unary.All.html#1239" class="InductiveConstructor">[]</a><a id="37924" class="Symbol">;</a> <a id="37926" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Relation.Unary.All.html#1256" class="InductiveConstructor Operator">_∷_</a><a id="37929" class="Symbol">)</a>
+<a id="37931" class="Keyword">import</a> <a id="37938" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Any.html" class="Module">Data.List.Any</a> <a id="37952" class="Keyword">using</a> <a id="37958" class="Symbol">(</a><a id="37959" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Relation.Unary.Any.html#1052" class="Datatype">Any</a><a id="37962" class="Symbol">;</a> <a id="37964" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Relation.Unary.Any.html#1115" class="InductiveConstructor">here</a><a id="37968" class="Symbol">;</a> <a id="37970" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Relation.Unary.Any.html#1168" class="InductiveConstructor">there</a><a id="37975" class="Symbol">)</a>
+<a id="37977" class="Keyword">import</a> <a id="37984" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Membership.Propositional.html" class="Module">Data.List.Membership.Propositional</a> <a id="38019" class="Keyword">using</a> <a id="38025" class="Symbol">(</a><a id="38026" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Membership.Setoid.html#877" class="Function Operator">_∈_</a><a id="38029" class="Symbol">)</a>
+<a id="38031" class="Keyword">import</a> <a id="38038" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Properties.html" class="Module">Data.List.Properties</a>
+  <a id="38061" class="Keyword">using</a> <a id="38067" class="Symbol">(</a><a id="38068" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Properties.html#28549" class="Function">reverse-++-commute</a><a id="38086" class="Symbol">;</a> <a id="38088" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Properties.html#3412" class="Function">map-compose</a><a id="38099" class="Symbol">;</a> <a id="38101" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Properties.html#2721" class="Function">map-++-commute</a><a id="38115" class="Symbol">;</a> <a id="38117" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Properties.html#15835" class="Function">foldr-++</a><a id="38125" class="Symbol">)</a>
+  <a id="38129" class="Keyword">renaming</a> <a id="38138" class="Symbol">(</a><a id="38139" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Properties.html#35768" class="Function">mapIsFold</a> <a id="38149" class="Symbol">to</a> <a id="38152" href="https://agda.github.io/agda-stdlib/v1.1/Data.List.Properties.html#35768" class="Function">map-is-foldr</a><a id="38164" class="Symbol">)</a>
+<a id="38166" class="Keyword">import</a> <a id="38173" href="https://agda.github.io/agda-stdlib/v1.1/Algebra.Structures.html" class="Module">Algebra.Structures</a> <a id="38192" class="Keyword">using</a> <a id="38198" class="Symbol">(</a><a id="38199" href="https://agda.github.io/agda-stdlib/v1.1/Algebra.Structures.html#2215" class="Record">IsMonoid</a><a id="38207" class="Symbol">)</a>
+<a id="38209" class="Keyword">import</a> <a id="38216" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Unary.html" class="Module">Relation.Unary</a> <a id="38231" class="Keyword">using</a> <a id="38237" class="Symbol">(</a><a id="38238" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Unary.html#3474" class="Function">Decidable</a><a id="38247" class="Symbol">)</a>
+<a id="38249" class="Keyword">import</a> <a id="38256" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.html" class="Module">Relation.Binary</a> <a id="38272" class="Keyword">using</a> <a id="38278" class="Symbol">(</a><a id="38279" href="https://agda.github.io/agda-stdlib/v1.1/Relation.Binary.Core.html#5557" class="Function">Decidable</a><a id="38288" class="Symbol">)</a>
+</pre>{% endraw %}
+{::comment}
+The standard library version of `IsMonoid` differs from the
+one given here, in that it is also parameterised on an equivalence relation.
+{:/}
+
+标准库中的 `IsMonoid` 与给出的定义不同，因为它可以针对特定的等价关系参数化。
+
+{::comment}
+Both `Relation.Unary` and `Relation.Binary` define a version of `Decidable`,
+one for unary relations (as used in this chapter where `P` ranges over
+unary predicates) and one for binary relations (as used earlier, where `_≤_`
+ranges over a binary relation).
+{:/}
+
+`Relation.Unary` 和 `Relation.Binary` 都定义了 `Decidable` 的某个版本，一个
+用于单元关系（正如本章中的单元谓词 `P`），一个用于二元关系（正如之前使用的 `_≤_`）。
+
+## Unicode
+
+{::comment}
+This chapter uses the following unicode:
+{:/}
+
+本章节使用下列 Unicode：
+
+{::comment}
+    ∷  U+2237  PROPORTION  (\::)
+    ⊗  U+2297  CIRCLED TIMES  (\otimes, \ox)
+    ∈  U+2208  ELEMENT OF  (\in)
+    ∉  U+2209  NOT AN ELEMENT OF  (\inn, \notin)
+
+{:/}
+
+    ∷  U+2237  比例  (\::)
+    ⊗  U+2297  带圈的乘号  (\otimes, \ox)
+    ∈  U+2208  是……的元素  (\in)
+    ∉  U+2209  不是……的元素  (\inn, \notin)
